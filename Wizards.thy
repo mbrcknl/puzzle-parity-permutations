@@ -304,12 +304,20 @@ sublocale solved?: solution accept concrete_choice assigned spare seen heard abs
 
 end
 
-interpretation example: hats_with_classifier parity "[7, 2, 5, 0, 1, 6, 4]" 3
-  apply unfold_locales by auto
+interpretation example_even: hats_with_classifier parity "[7, 2, 1, 0, 5, 6, 4]" 3
+  by unfold_locales auto
 
-thm example.correct
+interpretation example_odd:  hats_with_classifier parity "[7, 2, 5, 0, 1, 6, 4]" 3
+  by unfold_locales auto
 
-(* Why does this not evaluate? *)
-value example.spoken
+lemma "example_even.spoken = [7, 2, 1, 0, 5, 6, 4]"
+  unfolding example_even.spoken_def example_even.first_def
+            example_even.seen_def example_even.test_def parity_def
+  by simp
+
+lemma "example_odd.spoken  = [3, 2, 5, 0, 1, 6, 4]"
+  unfolding example_odd.spoken_def example_odd.first_def
+            example_odd.seen_def example_odd.test_def parity_def
+  by simp
 
 end
