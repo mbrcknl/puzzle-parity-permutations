@@ -104,7 +104,7 @@ lemma occ_nil_eq:
       using fun_cong[where x=x, OF assms] unfolding Cons by simp
   qed auto
 
-lemma listsum_cong:
+lemma sum_list_cong:
   fixes f g :: "nat \<Rightarrow> nat"
   assumes "occ xs = occ ys" "\<And>x. x \<in> set xs \<Longrightarrow> f x = g x"
   shows "(\<Sum>x\<leftarrow>xs. f x) = (\<Sum>y\<leftarrow>ys. g y)"
@@ -121,27 +121,27 @@ lemma listsum_cong:
     thus ?case using Cons(1,3) unfolding decomp by auto
   qed
 
-lemma length_filter_listsum:
-  "length [x \<leftarrow> xs . p x] = listsum [ if p x then 1 else 0 . x \<leftarrow> xs ]"
+lemma length_filter_sum_list:
+  "length [x \<leftarrow> xs . p x] = sum_list [ if p x then 1 else 0 . x \<leftarrow> xs ]"
   by (induct xs) auto
 
 lemma length_filter_cong:
   assumes "occ xs = occ ys" "\<And>x. x \<in> set xs \<Longrightarrow> p x = q x"
   shows "length [x \<leftarrow> xs . p x] = length [y \<leftarrow> ys . q y]"
-  unfolding length_filter_listsum by (rule listsum_cong) (auto simp: assms)
+  unfolding length_filter_sum_list by (rule sum_list_cong) (auto simp: assms)
 
 context
   fixes xs xs' ys ys' :: "nat list"
   assumes occ: "occ xs = occ xs'" "occ ys = occ ys'"
 begin
 
-lemma listsum_filter_length_cong:
+lemma sum_list_filter_length_cong:
   "(\<Sum>x\<leftarrow>xs. length [y\<leftarrow>ys . y < x]) = (\<Sum>x\<leftarrow>xs'. length [y\<leftarrow>ys' . y < x])"
-  by (intro listsum_cong occ length_filter_cong refl)
+  by (intro sum_list_cong occ length_filter_cong refl)
 
 lemma parity_app_eq:
   "parity (xs @ ys) = parity (xs' @ ys') \<longleftrightarrow> (parity xs = parity xs') = (parity ys = parity ys')"
-  by (auto simp: parity_app listsum_filter_length_cong)
+  by (auto simp: parity_app sum_list_filter_length_cong)
 
 end
 

@@ -90,10 +90,10 @@ lemma merge_pairs_occ:
       by (auto simp: merge_sorted_occ append_occ prod_split_case)
   qed auto
 
-lemma listsum_merge_pairs:
+lemma sum_list_merge_pairs:
   "(\<Sum> x \<leftarrow> snd (merge_sorted xs ys). length [y \<leftarrow> concat (snd (merge_pairs zss)) . y < x])
     = (\<Sum> x \<leftarrow> xs @ ys. length [y \<leftarrow> concat zss . y < x])"
-  by (intro listsum_cong merge_sorted_occ length_filter_cong merge_pairs_occ refl)
+  by (intro sum_list_cong merge_sorted_occ length_filter_cong merge_pairs_occ refl)
 
 lemma merge_pairs_sorted_parity:
   assumes "\<forall> xs \<in> set xss. sorted xs"
@@ -112,7 +112,7 @@ lemma merge_pairs_sorted_parity:
       by (auto simp add: prod_split_case IH merge_sorted_simps[OF hyp(1,2)]
                          parity_app[where xs="xs@ys"]
                          parity_app[where xs="snd (merge_sorted xs ys)"]
-                         listsum_merge_pairs
+                         sum_list_merge_pairs
                simp del: append_assoc map_append)
   qed auto
 
@@ -160,7 +160,7 @@ lemma merge_lists_sorted_parity:
                          parity_app[where xs="snd (merge_sorted xs ys)"]
                          merge_sorted_simps[OF hyp(1,2)]
                          merge_pairs_parity[OF hyp(3)]
-                         listsum_merge_pairs
+                         sum_list_merge_pairs
                simp del: append_assoc map_append)
   qed (auto elim: sorted_parity)
 
