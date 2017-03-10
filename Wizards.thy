@@ -153,7 +153,7 @@ proof (induction i rule: nat_less_induct)
 qed
 
 interpretation parity_classifier: classifier parity
-  apply unfold_locales using parity_swap by assumption
+  apply unfold_locales using parity_swap_left by auto
 
 definition (in classifier)
   "concrete_choice absent heard seen \<equiv>
@@ -312,12 +312,12 @@ interpretation example_odd:  hats_with_classifier parity "[7, 2, 5, 0, 1, 6, 4]"
 
 lemma "example_even.spoken = [7, 2, 1, 0, 5, 6, 4]"
   unfolding example_even.spoken_def example_even.first_def
-            example_even.seen_def example_even.test_def parity_def
+            example_even.seen_def example_even.test_def
   by simp
 
 lemma "example_odd.spoken  = [3, 2, 5, 0, 1, 6, 4]"
   unfolding example_odd.spoken_def example_odd.first_def
-            example_odd.seen_def example_odd.test_def parity_def
+            example_odd.seen_def example_odd.test_def
   by simp
 
 end

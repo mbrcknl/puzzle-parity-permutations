@@ -1,5 +1,5 @@
 theory Spells
-imports ListPermutations
+imports Parity_Swap
 begin
 
 lemma split_range: "0 < i \<Longrightarrow> 0 # [1 ..< i] = [0 ..< i]"
