@@ -1,6 +1,8 @@
 theory Parity_Merge_Sort
-imports Parity_Inversions
+imports Parity_Swap
 begin
+
+text \<open>Parity can be calculated by merge sort\<close>
 
 type_synonym 'a counter = "nat \<times> 'a"
 
@@ -24,6 +26,9 @@ lemma merge_sorted_occ:
 lemma merge_sorted_set:
   "set (snd (merge_sorted xs ys)) = set xs \<union> set ys"
   by (rule equalityI; rule subsetI) (auto simp: occ_member merge_sorted_occ append_occ)
+
+lemma prod_split_case: "P (case p of (x,y) \<Rightarrow> f x y) = P (f (fst p) (snd p))"
+  by (auto split: prod.splits)
 
 lemma merge_sorted_sorted_parity:
   "sorted xs \<Longrightarrow> sorted ys
