@@ -45,12 +45,7 @@ locale classifier =
     accept :: "nat list \<Rightarrow> bool"
   assumes
     accept: "\<And> a b xs ys. distinct (a # xs @ b # ys) \<Longrightarrow>
-               accept (a # xs @ b # ys) \<noteq> accept (b # xs @ a # ys)"
-
-lemma (in classifier) accept_alt:
-  assumes "distinct (a # xs @ b # ys)"
-  shows "accept (a # xs @ b # ys) = (\<not> accept (b # xs @ a # ys))"
-  using accept assms by blast
+               accept (a # xs @ b # ys) \<longleftrightarrow> \<not> accept (b # xs @ a # ys)"
 
 locale choice = classifier + wizards +
   assumes
@@ -153,7 +148,7 @@ proof (induction i rule: nat_less_induct)
 qed
 
 interpretation parity_classifier: classifier parity
-  apply unfold_locales using parity_swap_left by auto
+  apply unfold_locales using parity_swap[where as="[]"] by simp
 
 definition (in classifier)
   "concrete_choice absent heard seen \<equiv>
@@ -241,7 +236,7 @@ next
   thus ?thesis
     using assms hats_distinct unfolding concrete_choice_def absent_def
     apply (subst insert_commute, clarsimp)
-    apply (subst accept_alt[OF distinct])+
+    apply (subst accept[OF distinct])+
     by (clarsimp simp: fixed_order_view fixed_order_accepted)
 qed
 

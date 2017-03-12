@@ -1,5 +1,5 @@
 theory Parity_Merge_Sort
-imports Parity_Swap
+imports Parity_Extras
 begin
 
 text \<open>Parity can be calculated by merge sort\<close>
