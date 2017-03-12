@@ -105,7 +105,7 @@ proof (induction i rule: nat_less_induct)
   have heard_correct:
     "heard i = spoken ! 0 # map (op ! assigned) [1 ..< i]"
     unfolding heard take_map_nth[OF less_imp_le_nat, OF PS]
-    using IH PI split_range[symmetric] map_range_head by simp
+    using IH split_range[OF PI, symmetric] by simp
   have map_spoken_correct:
     "map (op ! spoken) [1 ..< i] = map (op ! assigned) [1 ..< i]"
     using IH map_cong set_upt by auto
