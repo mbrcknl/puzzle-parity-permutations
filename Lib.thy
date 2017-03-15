@@ -26,4 +26,7 @@ lemma distinct_conv_nth_less:
   apply (drule_tac x=j in spec; simp)
   done
 
+lemma set_minusI: "A \<inter> B = {} \<Longrightarrow> A \<union> B = C \<Longrightarrow> A = C - B"
+  by blast
+
 end

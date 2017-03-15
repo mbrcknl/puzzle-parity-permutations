@@ -75,6 +75,7 @@ lemma spoken_correct:
   "i \<in> {1 ..< length assigned} \<Longrightarrow> spoken i = assigned ! i"
   proof (induction i rule: nat_less_induct)
     case (1 i)
+
     have
       LB: "0 < i" and UB: "i < length assigned" and
       IH: "\<forall> j \<in> {1 ..< i}. spoken j = assigned ! j"
@@ -86,7 +87,9 @@ lemma spoken_correct:
     have heard: "?heard = spoken 0 # map (op ! assigned) [Suc 0 ..< i]"
       using LB UB IH split_range by auto
 
-    have initial_order: "rejected # ?heard @ assigned ! i # ?seen = initial_order"
+    let ?my_order = "rejected # ?heard @ assigned ! i # ?seen"
+
+    have initial_order: "?my_order = initial_order"
       unfolding initial_order_def heard
       apply (simp add: UB initial_order_def Cons_nth_drop_Suc)
       apply (subst drop_map_nth[OF less_imp_le_nat, OF UB])
@@ -96,17 +99,23 @@ lemma spoken_correct:
       apply (rule range_app)
       by (auto simp: UB LB less_imp_le Suc_le_eq)
 
-    have dist: "distinct (assigned ! i # rejected # ?heard)"
-      using distinct_initial unfolding initial_order[symmetric]
-      by auto
+    have distinct_my_order: "distinct ?my_order"
+      using distinct_initial initial_order by simp
 
     have set: "set (?heard @ ?seen) = {0..length assigned} - {rejected, assigned ! i}"
-      unfolding heard drop_map_nth[OF Suc_leI[OF UB]] assign[symmetric] spoken_0 rejected_def
-      apply (cases "parity (spare # assigned)"; simp; thin_tac _)
+      apply (rule set_minusI)
+      using distinct_my_order
+      unfolding heard drop_map_nth[OF Suc_leI[OF UB]] assign[symmetric]
+      unfolding spoken_0 rejected_def
+       apply fastforce
+      apply (cases "parity (spare # assigned)"; clarsimp)
       sorry
 
     have len: "1 + length (?heard @ ?seen) = length assigned"
       using LB UB heard by simp
+
+    have dist: "distinct (assigned ! i # rejected # ?heard)"
+      using distinct_my_order by auto
 
     have excl: "excluding (?heard @ ?seen) = {rejected, assigned ! i}"
       unfolding excluding_def len set
