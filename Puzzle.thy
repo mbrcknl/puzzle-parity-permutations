@@ -2,6 +2,8 @@ theory Puzzle
 imports Lib
 begin
 
+section \<open>Individual choice function\<close>
+
 definition
   "excluding xs \<equiv> {0 .. 1 + length xs} - set xs"
 
@@ -11,6 +13,26 @@ where
   "choice heard seen \<equiv>
     case sorted_list_of_set (excluding (heard @ seen)) of
       [a,b] \<Rightarrow> if parity (a # heard @ b # seen) then b else a"
+
+section \<open>Group choice function\<close>
+
+primrec
+  speak :: "nat list \<Rightarrow> nat list \<Rightarrow> nat list"
+where
+  "speak heard [] = []"
+| "speak heard (_ # seen) = (let c = choice heard seen in c # speak (heard @ [c]) seen)"
+
+section \<open>Examples\<close>
+
+definition "example_even \<equiv> [4,2,3,0]"
+lemma "parity (1 # example_even)" by eval
+lemma "speak [] example_even = [4,2,3,0]" by eval
+
+definition "example_odd \<equiv> [4,0,3,2]"
+lemma "\<not> parity (1 # example_odd)" by eval
+lemma "speak [] example_odd = [1,0,3,2]" by eval
+
+section \<open>Correctness of individual choice function\<close>
 
 context
   fixes spare :: "nat"
@@ -71,6 +93,11 @@ lemma distinct_initial: "distinct initial_order"
   using assigned_0 distinct distinct_length_2_or_more
   by (metis (full_types))
 
+lemma set_initial: "set initial_order = {0..length assigned}"
+  unfolding initial_order_def assign[symmetric] rejected_def spoken_0
+  using arg_cong[where f=set, OF assigned_0, symmetric]
+  by auto
+
 lemma spoken_correct:
   "i \<in> {1 ..< length assigned} \<Longrightarrow> spoken i = assigned ! i"
   proof (induction i rule: nat_less_induct)
@@ -102,20 +129,15 @@ lemma spoken_correct:
     have distinct_my_order: "distinct ?my_order"
       using distinct_initial initial_order by simp
 
+    have set_my_order: "set ?my_order = {0..length assigned}"
+      using set_initial initial_order by simp
+
     have set: "set (?heard @ ?seen) = {0..length assigned} - {rejected, assigned ! i}"
       apply (rule set_minusI)
-      using distinct_my_order
-      unfolding heard drop_map_nth[OF Suc_leI[OF UB]] assign[symmetric]
-      unfolding spoken_0 rejected_def
-       apply fastforce
-      apply (cases "parity (spare # assigned)"; clarsimp)
-      sorry
+      using distinct_my_order set_my_order by auto
 
     have len: "1 + length (?heard @ ?seen) = length assigned"
       using LB UB heard by simp
-
-    have dist: "distinct (assigned ! i # rejected # ?heard)"
-      using distinct_my_order by auto
 
     have excl: "excluding (?heard @ ?seen) = {rejected, assigned ! i}"
       unfolding excluding_def len set
@@ -124,10 +146,13 @@ lemma spoken_correct:
       unfolding rejected_def
       using UB exists by auto
 
+    have dist: "distinct (assigned ! i # rejected # ?heard)"
+      using distinct_my_order by auto
+
     show ?case
       apply (simp only: spoken choice_def excl)
       apply (subst sorted_list_of_set_distinct_pair)
-       using dist apply auto[1]
+       using distinct_my_order apply auto[1]
       apply (cases "assigned ! i < rejected"; clarsimp)
        unfolding parity_swap[OF dist, of "[]" "?seen", simplified]
        unfolding initial_order
