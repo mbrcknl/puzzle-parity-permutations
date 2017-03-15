@@ -2,9 +2,6 @@ theory Lib
 imports Parity_Swap
 begin
 
-lemma take_map_nth: "i \<le> length xs \<Longrightarrow> take i xs = map (op ! xs) [0 ..< i]"
-  by (metis add.left_neutral map_nth take_map take_upt)
-
 lemma drop_map_nth: "i \<le> length xs \<Longrightarrow> drop i xs = map (op ! xs) [i ..< length xs]"
   by (metis add.left_neutral drop_map drop_upt map_nth)
 
@@ -24,9 +21,9 @@ lemma range_app: "i \<le> j \<Longrightarrow> j \<le> k \<Longrightarrow> [i ..<
 lemma distinct_conv_nth_less:
   "distinct xs = (\<forall> j < length xs. \<forall> i < j. xs ! i \<noteq> xs ! j)"
   apply (rule iffI; clarsimp simp: distinct_conv_nth)
-  apply (case_tac "i < j"; case_tac "j < i"; simp)
-  apply (drule_tac x=i in spec; clarsimp)
-  apply (drule_tac x=j in spec; clarsimp)
+  apply (case_tac "j < i"; simp)
+  apply (drule_tac x=i in spec; simp)
+  apply (drule_tac x=j in spec; simp)
   done
 
 end
