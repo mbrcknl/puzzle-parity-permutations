@@ -17,20 +17,22 @@ where
 section \<open>Group choice function\<close>
 
 primrec
-  speak :: "nat list \<Rightarrow> nat list \<Rightarrow> nat list"
+  choices' :: "nat list \<Rightarrow> nat list \<Rightarrow> nat list"
 where
-  "speak heard [] = []"
-| "speak heard (_ # seen) = (let c = choice heard seen in c # speak (heard @ [c]) seen)"
+  "choices' heard [] = []"
+| "choices' heard (_ # seen) = (let c = choice heard seen in c # choices' (heard @ [c]) seen)"
+
+definition "choices \<equiv> choices' []"
 
 section \<open>Examples\<close>
 
-definition "example_even \<equiv> [4,2,3,0]"
+definition "example_even \<equiv> [4,2,3,6,0,5]"
 lemma "parity (1 # example_even)" by eval
-lemma "speak [] example_even = [4,2,3,0]" by eval
+lemma "choices example_even = [4,2,3,6,0,5]" by eval
 
-definition "example_odd \<equiv> [4,0,3,2]"
+definition "example_odd \<equiv> [4,0,3,6,2,5]"
 lemma "\<not> parity (1 # example_odd)" by eval
-lemma "speak [] example_odd = [1,0,3,2]" by eval
+lemma "choices example_odd = [1,0,3,6,2,5]" by eval
 
 section \<open>Correctness of individual choice function\<close>
 
@@ -167,5 +169,27 @@ lemma spoken_distinct: "distinct (map spoken [0 ..< length assigned])"
           split: if_splits)
 
 end
+
+section \<open>Correctness of group choice function\<close>
+
+lemma choices'_length: "length (choices' heard assigned) = length assigned"
+  by (induct assigned arbitrary: heard) (auto simp: Let_def)
+
+lemma choices_length: "length (choices assigned) = length assigned"
+  by (simp add: choices_def choices'_length)
+
+lemma choices':
+  assumes length: "i < length assigned"
+  assumes spoken: "spoken = choices' heard assigned"
+  shows "spoken ! i = choice (heard @ take i spoken) (drop (Suc i) assigned)"
+  using assms proof (induct assigned arbitrary: i spoken heard)
+    case Cons thus ?case by (cases i) (auto simp: Let_def)
+  qed simp
+
+lemma choices:
+  assumes length: "i < length assigned"
+  assumes spoken: "spoken = choices assigned"
+  shows "spoken ! i = choice (take i spoken) (drop (Suc i) assigned)"
+  using assms by (simp add: choices_def choices')
 
 end
