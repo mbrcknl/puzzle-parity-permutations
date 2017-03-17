@@ -148,15 +148,13 @@ lemma spoken_correct:
       unfolding rejected_def
       using UB exists by auto
 
-    have dist: "distinct (assigned ! i # rejected # ?heard)"
-      using distinct_my_order by auto
-
     show ?case
       apply (simp only: spoken choice_def excl)
       apply (subst sorted_list_of_set_distinct_pair)
        using distinct_my_order apply auto[1]
       apply (cases "assigned ! i < rejected"; clarsimp)
-       unfolding parity_swap[OF dist, of "[]" "?seen", simplified]
+       apply (subst (asm) parity_swap[of _ _ _ "[]", simplified])
+        apply (simp add: distinct_my_order[simplified])
        unfolding initial_order
        using parity_initial
        by auto

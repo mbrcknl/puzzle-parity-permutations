@@ -15,7 +15,7 @@ lemma parity_swap_adj:
   by (induct as; simp; blast)
 
 lemma parity_swap:
-  assumes "distinct (b # d # cs)"
+  assumes "b \<noteq> d \<and> b \<notin> set cs \<and> d \<notin> set cs"
   shows "parity (as @ b # cs @ d # es) \<longleftrightarrow> \<not> parity (as @ d # cs @ b # es)"
   using assms
   proof (induct cs arbitrary: as)
