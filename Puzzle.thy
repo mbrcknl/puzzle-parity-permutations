@@ -14,7 +14,6 @@ where
     case sorted_list_of_set (excluding (heard @ seen)) of
       [a,b] \<Rightarrow> if parity (a # heard @ b # seen) then b else a"
 
-
 section \<open>Group choice function\<close>
 
 primrec
@@ -24,7 +23,6 @@ where
 | "choices' heard (_ # seen) = (let c = choice heard seen in c # choices' (heard @ [c]) seen)"
 
 definition "choices \<equiv> choices' []"
-
 
 section \<open>Examples\<close>
 
@@ -36,23 +34,21 @@ definition "example_odd \<equiv> [4,0,3,6,2,5]"
 lemma "\<not> parity (1 # example_odd)" by eval
 lemma "choices example_odd = [1,0,3,6,2,5]" by eval
 
-
 section \<open>Group choice does not cheat\<close>
 
 lemma choices':
-  assumes length: "i < length assigned"
-  assumes spoken: "spoken = choices' heard assigned"
+  assumes "i < length assigned"
+  assumes "spoken = choices' heard assigned"
   shows "spoken ! i = choice (heard @ take i spoken) (drop (Suc i) assigned)"
   using assms proof (induct assigned arbitrary: i spoken heard)
     case Cons thus ?case by (cases i) (auto simp: Let_def)
   qed simp
 
 lemma choices:
-  assumes length: "i < length assigned"
-  assumes spoken: "spoken = choices assigned"
+  assumes "i < length assigned"
+  assumes "spoken = choices assigned"
   shows "spoken ! i = choice (take i spoken) (drop (Suc i) assigned)"
   using assms by (simp add: choices_def choices')
-
 
 section \<open>Group choice has the correct length\<close>
 
@@ -62,25 +58,13 @@ lemma choices'_length: "length (choices' heard assigned) = length assigned"
 lemma choices_length: "length (choices assigned) = length assigned"
   by (simp add: choices_def choices'_length)
 
-
 section \<open>Correctness of choice function\<close>
 
 context
   fixes spare :: "nat"
-  fixes assigned spoken :: "nat list"
+  fixes assigned :: "nat list"
   assumes assign: "set (spare # assigned) = {0 .. length assigned}"
-  assumes exists: "0 < length assigned"
-  assumes spoken: "spoken = choices assigned"
-  notes parity.simps(2) [simp del]
-
 begin
-
-lemma spoken_length: "length spoken = length assigned"
-  using choices_length spoken by simp
-
-lemma spoken_choice:
-  "i < length assigned \<Longrightarrow> spoken ! i = choice (take i spoken) (drop (Suc i) assigned)"
-  using choices spoken by simp
 
 lemma distinct: "distinct (spare # assigned)"
   apply (rule card_distinct)
@@ -91,6 +75,23 @@ lemma distinct_pointwise:
   assumes "i < length assigned"
   shows "spare \<noteq> assigned ! i \<and> (\<forall> j < length assigned. i \<noteq> j \<longrightarrow> assigned ! i \<noteq> assigned ! j)"
   using assms distinct by (auto simp: nth_eq_iff_index_eq)
+
+context
+  fixes spoken :: "nat list"
+  assumes spoken: "spoken = choices assigned"
+begin
+
+lemma spoken_length: "length spoken = length assigned"
+  using choices_length spoken by simp
+
+lemma spoken_choice:
+  "i < length assigned \<Longrightarrow> spoken ! i = choice (take i spoken) (drop (Suc i) assigned)"
+  using choices spoken by simp
+
+context
+  assumes exists: "0 < length assigned"
+  notes parity.simps(2) [simp del]
+begin
 
 lemma assigned_0:
   "assigned ! 0 # drop (Suc 0) assigned = assigned"
@@ -105,8 +106,10 @@ lemma set_excluding_0:
       using Diff_insert2 Diff_insert_absorb assign assigned_0 distinct distinct.simps(2) list.simps(15)
       by metis
     show ?thesis
-      unfolding excluding_def len set Diff_Diff_Int assign[symmetric]
-      using Int_absorb1 exists by auto
+      unfolding excluding_def len set
+      unfolding Diff_Diff_Int subset_absorb_r
+      unfolding assign[symmetric]
+      using exists by auto
   qed
 
 lemma spoken_0:
@@ -115,24 +118,25 @@ lemma spoken_0:
   using parity_swap_adj[where as="[]"] assigned_0 distinct_pointwise[OF exists]
   by (cases "assigned ! 0 < spare") auto
 
-definition
-  "rejected \<equiv> if parity (spare # assigned) then spare else assigned ! 0"
-
-definition
-  "initial_order \<equiv> rejected # spoken ! 0 # drop (Suc 0) assigned"
+context
+  fixes rejected :: "nat"
+  fixes initial_order :: "nat list"
+  assumes rejected: "rejected = (if parity (spare # assigned) then spare else assigned ! 0)"
+  assumes initial_order: "initial_order = rejected # spoken ! 0 # drop (Suc 0) assigned"
+begin
 
 lemma parity_initial: "parity initial_order"
-  unfolding initial_order_def spoken_0 rejected_def
+  unfolding initial_order spoken_0 rejected
   using parity_swap_adj[of "assigned ! 0" "spare" "[]"] distinct_pointwise[OF exists] assigned_0
   by auto
 
 lemma distinct_initial: "distinct initial_order"
-  unfolding initial_order_def rejected_def spoken_0
+  unfolding initial_order rejected spoken_0
   using assigned_0 distinct distinct_length_2_or_more
   by (metis (full_types))
 
 lemma set_initial: "set initial_order = {0..length assigned}"
-  unfolding initial_order_def assign[symmetric] rejected_def spoken_0
+  unfolding initial_order assign[symmetric] rejected spoken_0
   using arg_cong[where f=set, OF assigned_0, symmetric]
   by auto
 
@@ -150,12 +154,12 @@ lemma spoken_correct:
     let ?seen  = "drop (Suc i) assigned"
 
     have heard: "?heard = spoken ! 0 # map (op ! assigned) [Suc 0 ..< i]"
-      using IH take_map_nth[OF less_imp_le, OF US] split_range[OF LB] by auto
+      using IH take_map_nth[OF less_imp_le, OF US] range_extract_head[OF LB] by auto
 
     let ?my_order = "rejected # ?heard @ assigned ! i # ?seen"
 
     have initial_order: "?my_order = initial_order"
-      unfolding initial_order_def heard
+      unfolding initial_order heard
       apply (simp add: UB Cons_nth_drop_Suc)
       apply (subst drop_map_nth[OF less_imp_le_nat, OF UB])
       apply (subst drop_map_nth[OF Suc_leI[OF exists]])
@@ -171,7 +175,7 @@ lemma spoken_correct:
       using set_initial initial_order by simp
 
     have set: "set (?heard @ ?seen) = {0..length assigned} - {rejected, assigned ! i}"
-      apply (rule set_minusI)
+      apply (rule subset_minusI)
       using distinct_my_order set_my_order by auto
 
     have len: "1 + length (?heard @ ?seen) = length assigned"
@@ -181,7 +185,7 @@ lemma spoken_correct:
       unfolding excluding_def len set
       unfolding Diff_Diff_Int subset_absorb_r
       unfolding assign[symmetric]
-      unfolding rejected_def
+      unfolding rejected
       using UB exists by auto
 
     show ?case
@@ -196,11 +200,26 @@ lemma spoken_correct:
        by auto
   qed
 
-lemma spoken_distinct: "distinct spoken"
-  apply (clarsimp simp: distinct_conv_nth_less spoken_length)
-  by (case_tac "i = 0")
-     (auto simp: spoken_correct spoken_0 distinct_pointwise[OF exists] distinct_pointwise
-          split: if_splits)
+end
+end
+end
+
+lemma choices_correct: "i \<in> {1 ..< length assigned} \<Longrightarrow> choices assigned ! i = assigned ! i"
+  apply (rule spoken_correct) by auto
+
+lemma choices_distinct: "distinct (choices assigned)"
+  proof (cases "0 < length assigned")
+    case True show ?thesis
+    apply (clarsimp simp: distinct_conv_nth_less choices_length)
+    apply (case_tac "i = 0")
+    using True choices_correct spoken_0[OF _ True] distinct_pointwise
+    by (auto split: if_splits)
+  next
+    case False thus ?thesis using choices_length[of assigned] by simp
+  qed
 
 end
+
+thm choices choices_correct choices_distinct
+
 end
