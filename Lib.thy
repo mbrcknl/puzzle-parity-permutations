@@ -2,6 +2,8 @@ theory Lib
 imports Parity_Swap
 begin
 
+section \<open>Miscellaneous facts\<close>
+
 lemma take_map_nth: "i \<le> length xs \<Longrightarrow> take i xs = map (op ! xs) [0 ..< i]"
   by (metis add.left_neutral map_nth take_map take_upt)
 

@@ -2,7 +2,7 @@ theory Parity_Merge_Sort
 imports Parity_Extras
 begin
 
-text \<open>Parity can be calculated by merge sort\<close>
+section \<open>Calculating parity using merge sort\<close>
 
 type_synonym 'a counter = "nat \<times> 'a"
 

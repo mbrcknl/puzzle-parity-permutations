@@ -2,13 +2,21 @@ theory Parity_Swap
 imports Main
 begin
 
-text \<open>In a distinct list, swapping any two elements changes the parity\<close>
+section \<open>Parity of a list permutation\<close>
+
+text \<open>
+We calculate the parity of a list @{term xs} as the evenness of the number of inversions.
+We count an inversion whenever there are two indices @{term i} and @{term j}, such that
+@{text "i < j"}, but @{text "xs!i > xs!j"}.
+\<close>
 
 primrec
   parity :: "nat list \<Rightarrow> bool"
 where
   "parity [] = True"
 | "parity (x # ys) = (parity ys = even (length [y \<leftarrow> ys. x > y]))"
+
+text \<open>In a list that is sufficiently distinct, swapping any two elements changes the parity.\<close>
 
 lemma parity_swap_adj:
   "b \<noteq> c \<Longrightarrow> parity (as @ b # c # ds) \<longleftrightarrow> \<not> parity (as @ c # b # ds)"

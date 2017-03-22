@@ -2,7 +2,7 @@ theory Parity_Extras
 imports Parity_Inversions
 begin
 
-text \<open>In a distinct list, swapping any two elements changes the parity\<close>
+section \<open>Parity of list append\<close>
 
 primrec
   occ :: "nat list \<Rightarrow> nat \<Rightarrow> nat"
