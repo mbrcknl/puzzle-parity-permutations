@@ -1,4 +1,4 @@
-## Schrödinger's cats: a puzzle about parities and permutations
+## Schrödinger's hats: a puzzle about parities and permutations
 
 Meet Schrödinger, who travels the world with an unusually clever clowder of *n*
 talking cats. In their latest show, the cats stand in a line. Schrödinger asks
@@ -10,4 +10,7 @@ set {0..*n*}, without repeating any number previously called, and without any
 other communication. Although the first call is allowed to be wrong, the
 remaining cats always call out the numbers on their own hats.
 
-How do they do this?
+How do they do this? `Puzzle.thy` has the answer, with a proof in
+[Isabelle/HOL][].
+
+[Isabelle/HOL]: https://isabelle.in.tum.de/
