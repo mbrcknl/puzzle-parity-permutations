@@ -5,13 +5,13 @@ begin
 section \<open>Individual choice function\<close>
 
 definition
-  "excluding xs \<equiv> {0 .. 1 + length xs} - set xs"
+  "candidates xs \<equiv> {0 .. 1 + length xs} - set xs"
 
 definition
   choice :: "nat list \<Rightarrow> nat list \<Rightarrow> nat"
 where
   "choice heard seen \<equiv>
-    case sorted_list_of_set (excluding (heard @ seen)) of
+    case sorted_list_of_set (candidates (heard @ seen)) of
       [a,b] \<Rightarrow> if parity (a # heard @ b # seen) then b else a"
 
 section \<open>Group choice function\<close>
@@ -97,8 +97,8 @@ lemma assigned_0:
   "assigned ! 0 # drop (Suc 0) assigned = assigned"
   using exists by (simp add: Cons_nth_drop_Suc)
 
-lemma set_excluding_0:
-  "excluding (drop (Suc 0) assigned) = {spare, assigned ! 0}"
+lemma candidates_0:
+  "candidates (drop (Suc 0) assigned) = {spare, assigned ! 0}"
   proof -
     have len: "1 + length (drop (Suc 0) assigned) = length assigned"
       using exists by simp
@@ -106,7 +106,7 @@ lemma set_excluding_0:
       using Diff_insert2 Diff_insert_absorb assign assigned_0 distinct distinct.simps(2) list.simps(15)
       by metis
     show ?thesis
-      unfolding excluding_def len set
+      unfolding candidates_def len set
       unfolding Diff_Diff_Int subset_absorb_r
       unfolding assign[symmetric]
       using exists by auto
@@ -114,7 +114,7 @@ lemma set_excluding_0:
 
 lemma spoken_0:
   "spoken ! 0 = (if parity (spare # assigned) then assigned ! 0 else spare)"
-  unfolding spoken_choice[OF exists] choice_def take_0 append_Nil set_excluding_0
+  unfolding spoken_choice[OF exists] choice_def take_0 append_Nil candidates_0
   using parity_swap_adj[where as="[]"] assigned_0 distinct_pointwise[OF exists]
   by (cases "assigned ! 0 < spare") auto
 
@@ -181,15 +181,15 @@ lemma spoken_correct:
     have len: "1 + length (?heard @ ?seen) = length assigned"
       using LB UB heard by simp
 
-    have excl: "excluding (?heard @ ?seen) = {rejected, assigned ! i}"
-      unfolding excluding_def len set
+    have candidates: "candidates (?heard @ ?seen) = {rejected, assigned ! i}"
+      unfolding candidates_def len set
       unfolding Diff_Diff_Int subset_absorb_r
       unfolding assign[symmetric]
       unfolding rejected
       using UB exists by auto
 
     show ?case
-      apply (simp only: spoken_choice[OF UB] choice_def excl)
+      apply (simp only: spoken_choice[OF UB] choice_def candidates)
       apply (subst sorted_list_of_set_distinct_pair)
        using distinct_my_order apply auto[1]
       apply (cases "assigned ! i < rejected"; clarsimp)
