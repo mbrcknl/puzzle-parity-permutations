@@ -1,8 +1,8 @@
+section \<open>Calculating parity using merge sort\<close>
+
 theory Parity_Merge_Sort
 imports Parity_Extras
 begin
-
-section \<open>Calculating parity using merge sort\<close>
 
 type_synonym 'a counter = "nat \<times> 'a"
 

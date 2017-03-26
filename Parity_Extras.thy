@@ -1,8 +1,8 @@
+section \<open>Parity of list append\<close>
+
 theory Parity_Extras
 imports Parity_Inversions
 begin
-
-section \<open>Parity of list append\<close>
 
 primrec
   occ :: "nat list \<Rightarrow> nat \<Rightarrow> nat"

@@ -1,12 +1,12 @@
+section \<open>Parity by counting inversions abstractly\<close>
+
 theory Parity_Inversions
 imports Parity_Swap
 begin
 
-section \<open>Parity by counting inversions abstractly\<close>
-
 text \<open>
-Our recursive definition of parity is equivalent to the evenness of the number of inversions,
-expressed abstractly.
+  The recursive definition of parity is equivalent to the evenness of the number of inversions,
+  expressed abstractly.
 \<close>
 
 definition

@@ -1,8 +1,12 @@
+section \<open>Solving the puzzle\<close>
+
+(*<*)
 theory Puzzle
 imports Lib
 begin
+(*>*)
 
-section \<open>Individual choice function\<close>
+subsection \<open>Individual choice function\<close>
 
 definition
   "candidates xs \<equiv> {0 .. 1 + length xs} - set xs"
@@ -14,17 +18,18 @@ where
     case sorted_list_of_set (candidates (heard @ seen)) of
       [a,b] \<Rightarrow> if parity (a # heard @ b # seen) then b else a"
 
-section \<open>Group choice function\<close>
+subsection \<open>Group choice function\<close>
 
 primrec
   choices' :: "nat list \<Rightarrow> nat list \<Rightarrow> nat list"
 where
   "choices' heard [] = []"
-| "choices' heard (_ # seen) = (let c = choice heard seen in c # choices' (heard @ [c]) seen)"
+| "choices' heard (_ # seen)
+    = (let c = choice heard seen in c # choices' (heard @ [c]) seen)"
 
 definition "choices \<equiv> choices' []"
 
-section \<open>Examples\<close>
+subsection \<open>Examples\<close>
 
 definition "example_even \<equiv> [4,2,3,6,0,5]"
 lemma "parity (1 # example_even)" by eval
@@ -34,7 +39,7 @@ definition "example_odd \<equiv> [4,0,3,6,2,5]"
 lemma "\<not> parity (1 # example_odd)" by eval
 lemma "choices example_odd = [1,0,3,6,2,5]" by eval
 
-section \<open>Group choice does not cheat\<close>
+subsection \<open>Group choice does not cheat\<close>
 
 lemma choices':
   assumes "i < length assigned"
@@ -50,7 +55,7 @@ lemma choices:
   shows "spoken ! i = choice (take i spoken) (drop (Suc i) assigned)"
   using assms by (simp add: choices_def choices')
 
-section \<open>Group choice has the correct length\<close>
+subsection \<open>Group choice has the correct length\<close>
 
 lemma choices'_length: "length (choices' heard assigned) = length assigned"
   by (induct assigned arbitrary: heard) (auto simp: Let_def)
@@ -58,7 +63,7 @@ lemma choices'_length: "length (choices' heard assigned) = length assigned"
 lemma choices_length: "length (choices assigned) = length assigned"
   by (simp add: choices_def choices'_length)
 
-section \<open>Correctness of choice function\<close>
+subsection \<open>Correctness of choice function\<close>
 
 context
   fixes spare :: "nat"
@@ -73,7 +78,8 @@ lemma distinct: "distinct (spare # assigned)"
 
 lemma distinct_pointwise:
   assumes "i < length assigned"
-  shows "spare \<noteq> assigned ! i \<and> (\<forall> j < length assigned. i \<noteq> j \<longrightarrow> assigned ! i \<noteq> assigned ! j)"
+  shows "spare \<noteq> assigned ! i
+           \<and> (\<forall> j < length assigned. i \<noteq> j \<longrightarrow> assigned ! i \<noteq> assigned ! j)"
   using assms distinct by (auto simp: nth_eq_iff_index_eq)
 
 context
@@ -103,7 +109,8 @@ lemma candidates_0:
     have len: "1 + length (drop (Suc 0) assigned) = length assigned"
       using exists by simp
     have set: "set (drop (Suc 0) assigned) = {0..length assigned} - {spare, assigned ! 0}"
-      using Diff_insert2 Diff_insert_absorb assign assigned_0 distinct distinct.simps(2) list.simps(15)
+      using Diff_insert2 Diff_insert_absorb assign assigned_0 distinct
+            distinct.simps(2) list.simps(15)
       by metis
     show ?thesis
       unfolding candidates_def len set
@@ -127,7 +134,8 @@ begin
 
 lemma parity_initial: "parity initial_order"
   unfolding initial_order spoken_0 rejected
-  using parity_swap_adj[of "assigned ! 0" "spare" "[]"] distinct_pointwise[OF exists] assigned_0
+  using parity_swap_adj[of "assigned ! 0" "spare" "[]"]
+        distinct_pointwise[OF exists] assigned_0
   by auto
 
 lemma distinct_initial: "distinct initial_order"
@@ -204,7 +212,8 @@ end
 end
 end
 
-lemma choices_correct: "i \<in> {1 ..< length assigned} \<Longrightarrow> choices assigned ! i = assigned ! i"
+lemma choices_correct:
+  "i \<in> {1 ..< length assigned} \<Longrightarrow> choices assigned ! i = assigned ! i"
   apply (rule spoken_correct) by auto
 
 lemma choices_distinct: "distinct (choices assigned)"
@@ -220,6 +229,6 @@ lemma choices_distinct: "distinct (choices assigned)"
 
 end
 
-thm choices choices_correct choices_distinct
-
+(*<*)
 end
+(*>*)

@@ -1,13 +1,15 @@
+section \<open>Parity of a list permutation\<close>
+
+(*<*)
 theory Parity_Swap
 imports Main
 begin
-
-section \<open>Parity of a list permutation\<close>
+(*>*)
 
 text \<open>
-We calculate the parity of a list @{term xs} as the evenness of the number of inversions.
-We count an inversion whenever there are two indices @{term i} and @{term j}, such that
-@{text "i < j"}, but @{text "xs!i > xs!j"}.
+  Define the parity of a list @{term xs} as the evenness of the number of inversions.
+  Count an inversion for every pair @{term i} and @{term j}, such that @{text "i < j"},
+  but @{text "xs!i > xs!j"}.
 \<close>
 
 primrec
@@ -16,7 +18,10 @@ where
   "parity [] = True"
 | "parity (x # ys) = (parity ys = even (length [y \<leftarrow> ys. x > y]))"
 
-text \<open>In a list that is sufficiently distinct, swapping any two elements changes the parity.\<close>
+text \<open>
+  In a list that is sufficiently distinct, swapping any two elements inverts
+  the @{term parity}.
+\<close>
 
 lemma parity_swap_adj:
   "b \<noteq> c \<Longrightarrow> parity (as @ b # c # ds) \<longleftrightarrow> \<not> parity (as @ c # b # ds)"
@@ -36,4 +41,6 @@ lemma parity_swap:
       by simp
   qed
 
+(*<*)
 end
+(*>*)
