@@ -10,18 +10,18 @@
 
 \usepackage{isabelle,isabellesym}
 
-\usepackage{color}
-\definecolor{linkcolor}{rgb}{0,0,0.7}
-\usepackage[colorlinks=true,linkcolor=linkcolor,citecolor=linkcolor,
-            filecolor=linkcolor,urlcolor=linkcolor]{hyperref}
+\usepackage{setspace}
+\usepackage{parskip}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{lmodern}
+\usepackage{graphicx}
+\usepackage[pdftex]{hyperref}
 
 \hypersetup{
-pdfauthor={Matthew Brecknell},
-pdfsubject={A puzzle about parities and permutations},
-pdftitle={Schr\"odinger's hats}
+  pdfauthor={Matthew Brecknell},
+  pdftitle={Schr\"odinger's hats},
+  pdfsubject={A puzzle about parities and permutations}
 }
-
-\parindent 0pt\parskip 0.5ex
 
 \setlength{\oddsidemargin}{0cm}
 \setlength{\evensidemargin}{0cm}
@@ -29,14 +29,13 @@ pdftitle={Schr\"odinger's hats}
 \setlength{\textwidth}{15.5cm}
 \setlength{\textheight}{22.5cm}
 
-\newcommand{\meth}[1]{\texttt{#1()}}
-\newcommand{\obj}[1]{\textsf{\small #1}}
-
-\begin{document}
+\setstretch{1.1}
 
 \title{Schr\"odinger's hats}
 \subtitle{A puzzle about parities and permutations}
 \author{Matthew Brecknell}
+
+\begin{document}
 
 \maketitle
 
@@ -52,10 +51,10 @@ remaining cats always call out the numbers on their own hats.
 
 \section{Introduction}
 
-In this document, we will figure out how the cats do this. We'll start with
-some informal analysis, deriving the solution by a series of small logical
-steps. Once we've identified the key ingredient of the solution, we'll turn to
-formal proof in Isabelle/HOL, ultimately showing that the method always works.
+In this article, we will figure out how the cats do this. We'll start with some
+informal analysis, deriving the solution by a series of small logical steps.
+Once we've identified the key ingredient of the solution, we'll turn to formal
+proof in Isabelle/HOL, ultimately showing that the method always works.
 
 Along the way, we'll rediscover some properties of permutation groups, and
 we'll look at some of the basic techniques of formal mathematical proof.
@@ -76,18 +75,26 @@ calls.
 
 \subsubsection{Limited information}
 
-The cats receive limited information: they see the hats in front of them, and
-they hear the calls made by cats behind. In particular, no cat has any
-information about the rearmost cat's number. It might as well be a probability
-density function, which only collapses into a particular number when
-Scr\"odinger reveals all the hats at the end of the performance.
+Each cat sees the hats in front of it, and hears the calls made by those behind
+it, but otherwise recieves no information. In particular, no cat knows the
+rearmost cat's number. Until Schr\"odinger reveals it at the end of the
+performance, it could be either of the two hats the rearmost cat cannot see.
 
-The cats must assume the worst: that the rearmost cat got it wrong. And this
-means that all the other cats must get it right!
+To guarantee success, the cats must assume the worst: that the rearmost cat got
+it wrong. But this means that all the other cats must get it right!
 
-Counterintuitively, this makes our job easier: when considering how some
-particular cat makes its choice, we can assume that all the cats behind it,
-except the rearmost, have already made the right choice.
+Surprisingly, this makes our job easier: we don't have to deal with
+contingencies about whether or not we still have a free pass. And although we
+have to prove a strong result for all but the rearmost cat, we also get to make
+strong assumptions. When considering how some particular cat $k$ makes its
+choice, we can assume that all the cats $i \in \{1..k-1\}$, i.e. those behind
+it, except the rearmost, have already made the right choices.
+
+This might seem like circular reasoning, but it's not. In principle, we build
+up what we know from the rearmost cat, one cat at a time towards the front.
+Mathematical induction merely says that we can do this all at once by
+considering an arbitrary cat, and assuming we've already considered all the
+cats behind it.
 
 \subsubsection{Candidate selection}
 
@@ -95,10 +102,12 @@ According to the rules, no cat may repeat a number already called by another
 cat behind it. But we can also say that no cat may call a number that it can
 see ahead of it. If it did, there would be at least two incorrect calls.
 
-To see this, suppose some cat Felix called out a number that it saw on some
-other cat Tigger who is ahead of Felix. Hat numbers are unique, so Felix's
-number must be different from Tigger's, so Felix's call is wrong. But Tigger
-may not repeat the number that Felix called, so Tigger is also wrong.
+To see this, suppose some cat Felix called out a number that it saw on the hat
+of Tigger who is in front of Felix. Hat numbers are unique, so Felix's number
+must be different from Tigger's, and therefore Felix's call is wrong. But
+Tigger may not repeat the number that Felix called, so Tigger is also wrong.
+
+
 
 \input{session}
 
