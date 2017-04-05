@@ -1,4 +1,4 @@
-section \<open>Calculating parity using merge sort\<close>
+section \<open>Calculating parity efficiently using merge sort\<close>
 
 theory Parity_Merge_Sort
 imports Parity_Extras

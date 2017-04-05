@@ -4,10 +4,8 @@ theory Parity_Inversions
 imports Parity_Swap
 begin
 
-text \<open>
-  The recursive definition of parity is equivalent to the evenness of the number of inversions,
-  expressed abstractly.
-\<close>
+text \<open>The recursive definition of parity is equivalent to the evenness of the number of
+      inversions, expressed abstractly.\<close>
 
 definition
   inversions :: "nat list \<Rightarrow> (nat \<times> nat) set"

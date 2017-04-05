@@ -42,13 +42,63 @@ pdftitle={Schr\"odinger's hats}
 
 Meet Schr\"odinger, who travels the world with an unusually clever clowder of
 $n$ talking cats. In their latest show, the cats stand in a line.
-Schr\"odinger asks a volunteer (not a plant!) to take $n+1$ hats, numbered zero
-to $n$, and randomly assign one to each cat, so that there is one spare.  Each
-cat sees all of the hats in front of it, but not its own hat, nor those behind,
-nor the spare hat. The cats then take turns, each calling out a single number
-from the set $\{0..n\}$, without repeating any number previously called, and
-without any other communication. Although the first call is allowed to be
-wrong, the remaining cats always call out the numbers on their own hats.
+Schr\"odinger asks a volunteer to take $n+1$ hats, numbered zero to $n$, and
+randomly assign one to each cat, so that there is one spare. Each cat sees all
+of the hats in front of it, but not its own hat, nor those behind, nor the
+spare hat. The cats then take turns, each calling out a single number from the
+set $\{0..n\}$, without repeating any number previously called, and without any
+other communication. Although the first call is allowed to be wrong, the
+remaining cats always call out the numbers on their own hats.
+
+\section{Introduction}
+
+In this document, we will figure out how the cats do this. We'll start with
+some informal analysis, deriving the solution by a series of small logical
+steps. Once we've identified the key ingredient of the solution, we'll turn to
+formal proof in Isabelle/HOL, ultimately showing that the method always works.
+
+Along the way, we'll rediscover some properties of permutation groups, and
+we'll look at some of the basic techniques of formal mathematical proof.
+
+\subsection{Initial observations}
+
+We can begin to structure our thinking by making some initial observations.
+
+\subsubsection{Order of calls}
+
+The order in which the cats call out numbers is not specified, but there is a
+clear ordering of information available. The cat at the rear of the line should
+go first, because it initially has the most information: it can see all hats
+except its own and the spare hat. The cat second from the rear should go next:
+it can see all hats but three, and has heard the rearmost cat's call. Likewise,
+each subsequent cat should wait until all the cats behind it have made their
+calls.
+
+\subsubsection{Limited information}
+
+The cats receive limited information: they see the hats in front of them, and
+they hear the calls made by cats behind. In particular, no cat has any
+information about the rearmost cat's number. It might as well be a probability
+density function, which only collapses into a particular number when
+Scr\"odinger reveals all the hats at the end of the performance.
+
+The cats must assume the worst: that the rearmost cat got it wrong. And this
+means that all the other cats must get it right!
+
+Counterintuitively, this makes our job easier: when considering how some
+particular cat makes its choice, we can assume that all the cats behind it,
+except the rearmost, have already made the right choice.
+
+\subsubsection{Candidate selection}
+
+According to the rules, no cat may repeat a number already called by another
+cat behind it. But we can also say that no cat may call a number that it can
+see ahead of it. If it did, there would be at least two incorrect calls.
+
+To see this, suppose some cat Felix called out a number that it saw on some
+other cat Tigger who is ahead of Felix. Hat numbers are unique, so Felix's
+number must be different from Tigger's, so Felix's call is wrong. But Tigger
+may not repeat the number that Felix called, so Tigger is also wrong.
 
 \input{session}
 

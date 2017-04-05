@@ -8,6 +8,9 @@ begin
 
 subsection \<open>Individual choice function\<close>
 
+text \<open>Given a list of all hat numbers either @{text seen} or @{text heard}, we can reconstruct
+      the set of all hat numbers from the length of that list. Excluding the members from the\<close>
+
 definition
   "candidates xs \<equiv> {0 .. 1 + length xs} - set xs"
 
