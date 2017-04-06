@@ -11,9 +11,9 @@
 \usepackage{isabelle,isabellesym}
 
 \usepackage{setspace}
-\usepackage{parskip}
 \usepackage{amsmath,amssymb,amsthm}
-\usepackage{lmodern}
+\usepackage{mathtools}
+\usepackage[T1]{fontenc}
 \usepackage{graphicx}
 \usepackage[pdftex]{hyperref}
 
@@ -30,6 +30,12 @@
 \setlength{\textheight}{22.5cm}
 
 \setstretch{1.1}
+\parindent 0pt
+\parskip 0.8ex
+
+\newcommand{\N}{\mathbb N}
+\DeclarePairedDelimiterX\setc[2]{\{}{\}}
+  {#1 \mathrel{}\mathclose{}\delimsize|\mathopen{}\mathrel{} #2}
 
 \title{Schr\"odinger's hats}
 \subtitle{A puzzle about parities and permutations}
@@ -45,9 +51,9 @@ Schr\"odinger asks a volunteer to take $n+1$ hats, numbered zero to $n$, and
 randomly assign one to each cat, so that there is one spare. Each cat sees all
 of the hats in front of it, but not its own hat, nor those behind, nor the
 spare hat. The cats then take turns, each calling out a single number from the
-set $\{0..n\}$, without repeating any number previously called, and without any
-other communication. Although the first call is allowed to be wrong, the
-remaining cats always call out the numbers on their own hats.
+set $\setc*{i}{0 \leq i \leq n}$, without repeating any number previously
+called, and without any other communication. Although the first call is allowed
+to be wrong, the remaining cats always call out the numbers on their own hats.
 
 \section{Introduction}
 
@@ -56,7 +62,7 @@ informal analysis, deriving the solution by a series of small logical steps.
 Once we've identified the key ingredient of the solution, we'll turn to formal
 proof in Isabelle/HOL, ultimately showing that the method always works.
 
-Along the way, we'll rediscover some properties of permutation groups, and
+Along the way, we'll rediscover a simple property of permutation groups, and
 we'll look at some of the basic techniques of formal mathematical proof.
 
 \subsection{Initial observations}
@@ -67,11 +73,10 @@ We can begin to structure our thinking by making some initial observations.
 
 The order in which the cats call out numbers is not specified, but there is a
 clear ordering of information available. The cat at the rear of the line should
-go first, because it initially has the most information: it can see all hats
-except its own and the spare hat. The cat second from the rear should go next:
-it can see all hats but three, and has heard the rearmost cat's call. Likewise,
-each subsequent cat should wait until all the cats behind it have made their
-calls.
+go first, because it initially has the most information: it sees all hats
+except its own and the spare. The cat second from the rear should go next: it
+sees all but three hats, and has heard the rearmost cat's call. Likewise, every
+other cat should take its turn just after the cat behind it.
 
 \subsubsection{Limited information}
 
@@ -87,8 +92,8 @@ Surprisingly, this makes our job easier: we don't have to deal with
 contingencies about whether or not we still have a free pass. And although we
 have to prove a strong result for all but the rearmost cat, we also get to make
 strong assumptions. When considering how some particular cat $k$ makes its
-choice, we can assume that all the cats $i \in \{1..k-1\}$, i.e. those behind
-it, except the rearmost, have already made the right choices.
+choice, we can assume that all the cats $\setc*{i}{0 < i < k}$, i.e. those
+behind it, except the rearmost, have already made the right choices.
 
 This might seem like circular reasoning, but it's not. In principle, we build
 up what we know from the rearmost cat, one cat at a time towards the front.
@@ -99,15 +104,13 @@ cats behind it.
 \subsubsection{Candidate selection}
 
 According to the rules, no cat may repeat a number already called by another
-cat behind it. But we can also say that no cat may call a number that it can
-see ahead of it. If it did, there would be at least two incorrect calls.
+cat behind it. We can also say that no cat may call a number that it can see
+ahead of it. If it did, there would be at least two incorrect calls.
 
 To see this, suppose some cat Felix called out a number that it saw on the hat
 of Tigger who is in front of Felix. Hat numbers are unique, so Felix's number
 must be different from Tigger's, and therefore Felix's call is wrong. But
 Tigger may not repeat the number that Felix called, so Tigger is also wrong.
-
-
 
 \input{session}
 
