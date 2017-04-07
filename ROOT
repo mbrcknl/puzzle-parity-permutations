@@ -5,6 +5,7 @@ session Puzzle = HOL +
     , document=pdf
     ]
   theories
+    Intro
     Parity_Swap
   theories [document=false]
     Lib
