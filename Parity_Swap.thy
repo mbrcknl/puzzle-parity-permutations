@@ -1,4 +1,4 @@
-section \<open>Parity of a list permutation\<close>
+subsection \<open>Parity of a list permutation\<close>
 
 (*<*)
 theory Parity_Swap
@@ -21,7 +21,7 @@ text \<open>In a list that is sufficiently distinct, swapping any two elements i
 
 lemma parity_swap_adj:
   "b \<noteq> c \<Longrightarrow> parity (as @ b # c # ds) \<longleftrightarrow> \<not> parity (as @ c # b # ds)"
-  by (induct as; simp; blast)
+  by (induct as) auto
 
 lemma parity_swap:
   assumes "b \<noteq> d \<and> b \<notin> set cs \<and> d \<notin> set cs"

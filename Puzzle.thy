@@ -1,4 +1,4 @@
-section \<open>Solving the puzzle\<close>
+subsection \<open>Solving the puzzle\<close>
 
 (*<*)
 theory Puzzle
@@ -6,7 +6,7 @@ imports Lib
 begin
 (*>*)
 
-subsection \<open>Individual choice function\<close>
+subsubsection \<open>Individual choice function\<close>
 
 text \<open>Given a list of all hat numbers either @{text seen} or @{text heard}, we can reconstruct
       the set of all hat numbers from the length of that list. Excluding the members from the\<close>
@@ -21,7 +21,7 @@ where
     case sorted_list_of_set (candidates (heard @ seen)) of
       [a,b] \<Rightarrow> if parity (a # heard @ b # seen) then b else a"
 
-subsection \<open>Group choice function\<close>
+subsubsection \<open>Group choice function\<close>
 
 primrec
   choices' :: "nat list \<Rightarrow> nat list \<Rightarrow> nat list"
@@ -32,7 +32,7 @@ where
 
 definition "choices \<equiv> choices' []"
 
-subsection \<open>Examples\<close>
+subsubsection \<open>Examples\<close>
 
 definition "example_even \<equiv> [4,2,3,6,0,5]"
 lemma "parity (1 # example_even)" by eval
@@ -42,7 +42,7 @@ definition "example_odd \<equiv> [4,0,3,6,2,5]"
 lemma "\<not> parity (1 # example_odd)" by eval
 lemma "choices example_odd = [1,0,3,6,2,5]" by eval
 
-subsection \<open>Group choice does not cheat\<close>
+subsubsection \<open>Group choice does not cheat\<close>
 
 lemma choices':
   assumes "i < length assigned"
@@ -58,7 +58,7 @@ lemma choices:
   shows "spoken ! i = choice (take i spoken) (drop (Suc i) assigned)"
   using assms by (simp add: choices_def choices')
 
-subsection \<open>Group choice has the correct length\<close>
+subsubsection \<open>Group choice has the correct length\<close>
 
 lemma choices'_length: "length (choices' heard assigned) = length assigned"
   by (induct assigned arbitrary: heard) (auto simp: Let_def)
