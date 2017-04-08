@@ -5,11 +5,15 @@ session Puzzle = HOL +
     , document=pdf
     ]
   theories
-    Intro
+    Introduction
     Parity_Swap
   theories [document=false]
     Lib
   theories
     Puzzle
+  theories [document=false]
+    Parity_Inversions
+    Parity_Extras
+    Parity_Merge_Sort
   document_files
     "root.tex"

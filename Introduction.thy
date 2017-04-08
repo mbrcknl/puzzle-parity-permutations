@@ -1,5 +1,5 @@
 (*<*)
-theory Intro
+theory Introduction
 imports Main
 begin
 (*>*)
@@ -19,7 +19,6 @@ to be wrong, the remaining cats always call out the numbers on their own hats.
 section \<open>Introduction\<close>
 
 text \<open>
-
 In this article, we will figure out how the cats do this. We'll start with some
 informal analysis, deriving the solution by repeatedly asking ourselves the
 question: if there is a solution, what must it look like? Once we've identified
@@ -111,7 +110,49 @@ rejects the same number that the rearmost cat rejected.
 section \<open>The choice function\<close>
 
 text \<open>
-We now begin to derive the algorithm the cats use to make their choices.
+If each cat has an algorithm to choose which number to call, we can represent
+this as a function. We don't yet know its definition, but we can write its
+type:
+\<close>
+
+type_synonym choice_type = "nat list \<Rightarrow> nat list \<Rightarrow> nat"
+
+text \<open>
+When it is cat $k$'s turn, we give the list of calls heard from behind, and the
+list of hats seen in front, both in order, and the function returns the number
+the cat should call. Incidentally, the lengths of the lists give the position
+of the cat in the line, so we can a single function to represent the choices of
+all cats, without loss of generality.
+
+Given only the hat numbers that were heard and seen, the choice function must
+first calculate the choice candidates, by reconstructing the set of all hat
+numbers, and subtracting those @{term xs} that were either heard or seen:
+\<close>
+
+definition
+  candidates :: "nat list \<Rightarrow> nat set"
+where
+  "candidates xs \<equiv> {0 .. 1 + length xs} - set xs"
+
+text \<open>
+We can now partially implement the choice function, deferring the real work to
+a classification function, which we'll take as a parameter until we know how to
+implement it:
+\<close>
+
+type_synonym classifier_type = "nat \<Rightarrow> nat list \<Rightarrow> nat \<Rightarrow> nat list \<Rightarrow> bool"
+
+definition
+  choice' :: "classifier_type \<Rightarrow> choice_type"
+where
+  "choice' classify heard seen \<equiv>
+    case sorted_list_of_set (candidates (heard @ seen)) of
+      [a,b] \<Rightarrow> if (classify a heard b seen) then b else a"
+
+text \<open>
+Here, we first use @{term candidates} to calculate the two numbers from which
+we must choose. We then take these in sorted order, and pass them to the
+classifier, along with the original arguments @{text heard} and @{text seen}.
 \<close>
 
 section \<open>Proof\<close>
