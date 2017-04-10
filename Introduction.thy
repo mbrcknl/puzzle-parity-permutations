@@ -76,10 +76,12 @@ $\setc*{i}{0 < i < k}$, i.e. those behind it, except the rearmost, have already
 made the right choices.
 
 This might seem like circular reasoning, but it's not. In principle, we build
-up what we know from the rearmost cat, one cat at a time towards the front.
-Mathematical induction merely says that we can do this all at once by
-considering an arbitrary cat $k$, and assuming we've already considered all the
-cats $\setc{i}{0 \leq i < k}$ behind it.
+up what we know from the rearmost cat, one cat at a time towards the front,
+using what we've already shown about cats $\setc{i}{0 \leq i < k}$ when we're
+proving that cat $k$ makes the right choice. Mathematical induction merely says
+that if all steps are alike, we can take them all at once by considering an
+arbitrary cat $k$, and assuming we've already considered all the cats
+$\setc{i}{0 \leq i < k}$ behind it.
 \<close>
 
 subsection \<open>Candidate selection\<close>
@@ -105,24 +107,36 @@ the rearmost cat chose \emph{not} to call.
 
 To solve the puzzle, we therefore just need to ensure that every cat $k$
 rejects the same number that the rearmost cat rejected.
+
+This bears repeating, lest we miss its significance!
+
+Working from the rear to the front, if each cat rejects all the numbers it has
+heard and seen, and of the remaining numbers, \emph{additionally rejects the
+same number as the rearmost cat}, then the puzzle is solved.
 \<close>
 
 section \<open>The choice function\<close>
 
 text \<open>
-If each cat has an algorithm to choose which number to call, we can represent
-this as a function. We don't yet know its definition, but we can write its
+We'll now derive the method the cats use to ensure all of them reject the same
+hat. We assume that the cats have agreed beforehand on the algorithm each cat
+will \emph{individually} apply, and have convinced themselves that the agreed
+algorithm will bring them \emph{collective} success, no matter how the hats are
+assigned to them.
+
+We can represent the individual algorithm as a function of the information an
+individual cat receives. We don't yet know its definition, but we can write its
 type:
 \<close>
 
-type_synonym choice_type = "nat list \<Rightarrow> nat list \<Rightarrow> nat"
+type_synonym choice_t = "nat list \<Rightarrow> nat list \<Rightarrow> nat"
 
 text \<open>
-When it is cat $k$'s turn, we give the list of calls heard from behind, and the
-list of hats seen in front, both in order, and the function returns the number
-the cat should call. Incidentally, the lengths of the lists give the position
-of the cat in the line, so we can a single function to represent the choices of
-all cats, without loss of generality.
+That is, when it is cat $k$'s turn, we give the list of calls heard from
+behind, and the list of hats seen in front, both in order, and the function
+returns the number the cat should call. Incidentally, the lengths of the lists
+give the position of the cat in the line, so we can use a single function to
+represent the choices of all cats, without loss of generality.
 
 Given only the hat numbers that were heard and seen, the choice function must
 first calculate the choice candidates, by reconstructing the set of all hat
@@ -140,19 +154,20 @@ a classification function, which we'll take as a parameter until we know how to
 implement it:
 \<close>
 
-type_synonym classifier_type = "nat \<Rightarrow> nat list \<Rightarrow> nat \<Rightarrow> nat list \<Rightarrow> bool"
+type_synonym classifier_t = "nat \<Rightarrow> nat list \<Rightarrow> nat \<Rightarrow> nat list \<Rightarrow> bool"
 
 definition
-  choice' :: "classifier_type \<Rightarrow> choice_type"
+  choice' :: "classifier_t \<Rightarrow> choice_t"
 where
   "choice' classify heard seen \<equiv>
     case sorted_list_of_set (candidates (heard @ seen)) of
       [a,b] \<Rightarrow> if (classify a heard b seen) then b else a"
 
 text \<open>
-Here, we first use @{term candidates} to calculate the two numbers from which
-we must choose. We then take these in sorted order, and pass them to the
+Here, we take the @{term candidates} in sorted order, and pass them to the
 classifier, along with the original arguments @{text heard} and @{text seen}.
+The classifier returns a @{typ bool} that indicates which of the two candidates
+should be used.
 \<close>
 
 section \<open>Proof\<close>
