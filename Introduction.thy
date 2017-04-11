@@ -149,45 +149,60 @@ where
   "candidates xs \<equiv> {0 .. 1 + length xs} - set xs"
 
 text \<open>
-We'll now partially implement the choice function, deferring the real work to a
-classification function, which we'll take as a parameter until we know how to
-implement it:
+We'll now partially implement the choice function, deferring most of the work
+to a classification function, which we'll take as a parameter until we know how
+to implement it:
 \<close>
 
 type_synonym classifier_t = "nat \<Rightarrow> nat list \<Rightarrow> nat \<Rightarrow> nat list \<Rightarrow> bool"
 
 definition
-  choice' :: "classifier_t \<Rightarrow> choice_t"
+  choice :: "classifier_t \<Rightarrow> choice_t"
 where
-  "choice' classify heard seen \<equiv>
+  "choice classify heard seen \<equiv>
     case sorted_list_of_set (candidates (heard @ seen)) of
       [a,b] \<Rightarrow> if (classify a heard b seen) then b else a"
 
 text \<open>
-Here, we take the @{term candidates} in sorted order, and pass them to the
-classifier, along with the original arguments @{text heard} and @{text seen}.
-The classifier returns a @{typ bool} that indicates whether the given selection
-should be accepted or rejected. Since there is always exactly one correct call,
-we require that the classifier accepts a selection if and only if it would
-reject the alternative:
+Here, we take the @{term candidates} in an arbitrary order,\footnote{We must
+choose \emph{some} order to extract elements from a set, though here it does
+not matter which.} and pass them to the classifier, along with the original
+arguments @{text heard} and @{text seen}.
+
+The order in which we pass arguments to @{text classify} is suggestive of one
+of the two possible orderings of the full set of hats consistent with what is
+@{text heard} and @{text seen} by the cat making the @{text choice}. The cat
+imagines one of the two @{text candidates} on its head, between those @{text
+heard} and @{text seen}, and imagines the other one placed on the floor behind
+the rearmost cat.
+
+The classifier then returns a @{typ bool} that indicates whether the given
+ordering should be accepted or rejected. If accepted, the cat calls the hat it
+has imagined on its own head. If rejected, it calls the other. Since there must
+always be exactly one correct call, we require that the classifier accepts an
+ordering if and only if it would reject the alternative:
 \<close>
 
 definition
-  classifier_correct_p :: "classifier_t \<Rightarrow> bool"
+  classifier_correct :: "classifier_t \<Rightarrow> bool"
 where
-  "classifier_correct_p classify \<equiv>
+  "classifier_correct classify \<equiv>
     \<forall>a heard b seen.
       classify a heard b seen \<longleftrightarrow> \<not> classify b heard a seen"
 
 text \<open>
-Although this is a small refinement, it gives us a very different way of
-looking at the problem. Instead of thinking about the correct hat number, which
-is different for each cat, we can think about orderings of the complete set of
-hats, and whether or not those orderings are consistent with the information
-available to the cats.
+This means that we can say which is the accepted ordering, regardless of which
+ordering we actually passed to the classifier.
 
-Indeed, the order we pass arguments to the classifier is suggestive of such an
-ordering.
+Although the refinement from choice to classifer might seem trivial, it gives
+us a different way of looking at the problem. Instead of asking what is the
+correct hat number, which is different for each cat, we can consider orderings
+of the complete set of hats, and whether or not those orderings are consistent
+with the information available to \emph{all} of the cats.
+
+In particular, we notice that the accepted orderings must be the same for all
+cats, because the number that any cat $k$ calls becomes @{text heard} by
+subsequent cats $\setc{i}{k < i < n}$.
 \<close>
 
 section \<open>Proof\<close>
