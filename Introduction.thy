@@ -149,8 +149,8 @@ where
   "candidates xs \<equiv> {0 .. 1 + length xs} - set xs"
 
 text \<open>
-We can now partially implement the choice function, deferring the real work to
-a classification function, which we'll take as a parameter until we know how to
+We'll now partially implement the choice function, deferring the real work to a
+classification function, which we'll take as a parameter until we know how to
 implement it:
 \<close>
 
@@ -166,8 +166,28 @@ where
 text \<open>
 Here, we take the @{term candidates} in sorted order, and pass them to the
 classifier, along with the original arguments @{text heard} and @{text seen}.
-The classifier returns a @{typ bool} that indicates which of the two candidates
-should be used.
+The classifier returns a @{typ bool} that indicates whether the given selection
+should be accepted or rejected. Since there is always exactly one correct call,
+we require that the classifier accepts a selection if and only if it would
+reject the alternative:
+\<close>
+
+definition
+  classifier_correct_p :: "classifier_t \<Rightarrow> bool"
+where
+  "classifier_correct_p classify \<equiv>
+    \<forall>a heard b seen.
+      classify a heard b seen \<longleftrightarrow> \<not> classify b heard a seen"
+
+text \<open>
+Although this is a small refinement, it gives us a very different way of
+looking at the problem. Instead of thinking about the correct hat number, which
+is different for each cat, we can think about orderings of the complete set of
+hats, and whether or not those orderings are consistent with the information
+available to the cats.
+
+Indeed, the order we pass arguments to the classifier is suggestive of such an
+ordering.
 \<close>
 
 section \<open>Proof\<close>
