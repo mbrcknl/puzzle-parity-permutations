@@ -164,21 +164,19 @@ where
       [a,b] \<Rightarrow> if (classify a heard b seen) then b else a"
 
 text \<open>
-Here, we take the @{term candidates} in an arbitrary order,\footnote{We must
-choose \emph{some} order to extract elements from a set, though here it does
-not matter which.} and pass them to the classifier, along with the original
-arguments @{text heard} and @{text seen}.
+Here, we take the @{term candidates}, and pass them to the classifier, along
+with the original arguments @{text heard} and @{text seen}.
 
-The order in which we pass arguments to @{text classify} is suggestive of one
-of the two possible orderings of the full set of hats consistent with what is
-@{text heard} and @{text seen} by the cat making the @{text choice}. The cat
-imagines one of the two @{text candidates} on its head, between those @{text
-heard} and @{text seen}, and imagines the other one placed on the floor behind
-the rearmost cat.
+The order in which we pass these arguments is suggestive of one of the two
+possible orderings of the full set of hats consistent with what is @{text
+heard} and @{text seen} by the cat making the @{text choice}. If the @{text
+candidates} are @{text a} and @{text b}, the cat imagines @{text b} on its
+head, between those @{text heard} and @{text seen}, and imagines @{text a}
+placed on the floor behind the rearmost cat.
 
 The classifier then returns a @{typ bool} that indicates whether the given
 ordering should be accepted or rejected. If accepted, the cat calls the hat it
-has imagined on its own head. If rejected, it calls the other. Since there must
+had imagined on its own head. If rejected, it calls the other. Since there must
 always be exactly one correct call, we require that the classifier accepts an
 ordering if and only if it would reject the alternative:
 \<close>
@@ -200,9 +198,13 @@ correct hat number, which is different for each cat, we can consider orderings
 of the complete set of hats, and whether or not those orderings are consistent
 with the information available to \emph{all} of the cats.
 
-In particular, we notice that the accepted orderings must be the same for all
-cats, because the number that any cat $k$ calls becomes @{text heard} by
-subsequent cats $\setc{i}{k < i < n}$.
+In particular, we notice that for all but the rearmost cat to choose the
+correct hats, the accepted orderings must be the same for all cats. This is
+because the correct call for any cat must have been what was @{text seen} by
+all cats to the rear, and will subsequently be @{text heard} by all cats
+towards the front.
+
+Surprisingly, this is true even for the rearmost cat!
 \<close>
 
 section \<open>Proof\<close>
