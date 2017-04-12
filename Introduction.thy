@@ -129,7 +129,7 @@ individual cat receives. We don't yet know its definition, but we can write its
 type:
 \<close>
 
-type_synonym choice_t = "nat list \<Rightarrow> nat list \<Rightarrow> nat"
+type_synonym choice = "nat list \<Rightarrow> nat list \<Rightarrow> nat"
 
 text \<open>
 That is, when it is cat $k$'s turn, we give the list of calls heard from
@@ -154,12 +154,12 @@ to a classification function, which we'll take as a parameter until we know how
 to implement it:
 \<close>
 
-type_synonym classifier_t = "nat \<Rightarrow> nat list \<Rightarrow> nat \<Rightarrow> nat list \<Rightarrow> bool"
+type_synonym classifier = "nat \<Rightarrow> nat list \<Rightarrow> nat \<Rightarrow> nat list \<Rightarrow> bool"
 
 definition
-  choice :: "classifier_t \<Rightarrow> choice_t"
+  choice' :: "classifier \<Rightarrow> choice"
 where
-  "choice classify heard seen \<equiv>
+  "choice' classify heard seen \<equiv>
     case sorted_list_of_set (candidates (heard @ seen)) of
       [a,b] \<Rightarrow> if (classify a heard b seen) then b else a"
 
@@ -169,10 +169,9 @@ with the original arguments @{text heard} and @{text seen}.
 
 The order in which we pass these arguments is suggestive of one of the two
 possible orderings of the full set of hats consistent with what is @{text
-heard} and @{text seen} by the cat making the @{text choice}. If the @{text
-candidates} are @{text a} and @{text b}, the cat imagines @{text b} on its
-head, between those @{text heard} and @{text seen}, and imagines @{text a}
-placed on the floor behind the rearmost cat.
+heard} and @{text seen} by the cat making the choice. The cat imagines hat
+@{text b} on its head, between those it has @{text heard} and @{text seen}, and
+imagines hat @{text a} placed on the floor behind the rearmost cat.
 
 The classifier then returns a @{typ bool} that indicates whether the given
 ordering should be accepted or rejected. If accepted, the cat calls the hat it
@@ -182,7 +181,7 @@ ordering if and only if it would reject the alternative:
 \<close>
 
 definition
-  classifier_correct :: "classifier_t \<Rightarrow> bool"
+  classifier_correct :: "classifier \<Rightarrow> bool"
 where
   "classifier_correct classify \<equiv>
     \<forall>a heard b seen.
@@ -192,7 +191,7 @@ text \<open>
 This means that we can say which is the accepted ordering, regardless of which
 ordering we actually passed to the classifier.
 
-Although the refinement from choice to classifer might seem trivial, it gives
+Although the refinement from choice to classifier might seem trivial, it gives
 us a different way of looking at the problem. Instead of asking what is the
 correct hat number, which is different for each cat, we can consider orderings
 of the complete set of hats, and whether or not those orderings are consistent
@@ -200,12 +199,62 @@ with the information available to \emph{all} of the cats.
 
 In particular, we notice that for all but the rearmost cat to choose the
 correct hats, the accepted orderings must be the same for all cats. This is
-because the correct call for any cat must have been what was @{text seen} by
-all cats to the rear, and will subsequently be @{text heard} by all cats
-towards the front.
+because the correct call for any cat must be what was @{text seen} by all cats
+to the rear, and will also be @{text heard} by all cats towards the front.
 
-Surprisingly, this is true even for the rearmost cat!
+Surprisingly, this is true even for the rearmost cat! The only thing special
+about the rearmost cat is that its assigned number is irrelevant. The task of
+the rearmost cat is not to guess its assigned number, but to inform the other
+cats which ordering is both consistent with the information they will have, and
+also accepted by the classifier.
+
+We can write down the required property that the accepted orderings must be
+consistent:
 \<close>
+
+definition
+  "accepted_order_consistent classify \<equiv>
+    \<forall>a heard b seen a' heard' b' seen'.
+      a # heard @ b # seen = a' # heard' @ b' # seen'
+        \<longrightarrow> classify a heard b seen = classify a' heard' b' seen'"
+
+text \<open>
+So far, we have investigated some properties that the classifier must have, but
+have not thrown away any information. The classifier is given everything known
+to each cat. The lengths of the arguments @{text heard} and @{text seen} encode
+the cat's position in the line, so we even allow the classifier to behave
+differently for each cat.
+
+But the property @{term accepted_order_consistent} suggests that the position
+in the line is not needed, and that we can collapse the classifier's arguments
+into a single list. Given an existing classifier, we can define a function
+which does this:
+\<close>
+
+type_synonym parity = "nat list \<Rightarrow> bool"
+
+definition
+  parity :: "classifier \<Rightarrow> parity"
+where
+  "parity classify xs \<equiv>
+    case xs of x # y # zs \<Rightarrow> classify x [] y zs | _ \<Rightarrow> True"
+
+text \<open>
+We can prove that it has all the behaviours of a well-defined classifier, which
+means that, in fact, we have not thrown away anything:
+\<close>
+
+lemma parity_complete:
+  "accepted_order_consistent classify \<Longrightarrow>
+    \<forall>a heard b seen. classify a heard b seen = parity classify (a # heard @ b # seen)"
+  unfolding accepted_order_consistent_def parity_def
+  apply (intro allI)
+  apply (drule_tac x=a in spec)
+  apply (drule_tac x=heard in spec)
+  apply (drule_tac x=b in spec)
+  apply (drule_tac x=seen in spec)
+  apply (case_tac heard)
+  by auto
 
 section \<open>Proof\<close>
 
