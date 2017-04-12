@@ -1,6 +1,6 @@
 (*<*)
 theory Introduction
-imports Main
+imports Lib
 begin
 (*>*)
 
@@ -62,7 +62,7 @@ subsection \<open>Limited information\<close>
 
 text \<open>
 Each cat sees the hats in front of it, and hears the calls made by those behind
-it, but otherwise recieves no information. In particular, no cat knows the
+it, but otherwise receives no information. In particular, no cat knows the
 rearmost cat's number. Until Schr\"odinger reveals it at the end of the
 performance, it could be either of the two hats that are invisible to all cats.
 
@@ -101,7 +101,7 @@ This means that each cat $k$ has to choose between exactly two candidate
 numbers: those left over after removing all the numbers it has seen and heard.
 Since none of the cats $\setc{i}{0 \leq i < k}$ previously called $k$'s number,
 $k$'s own number is one of those candidates. Taking into account our assumption
-that all those $\setc{i}{0 < i < k}$ except the rearmost, called their own
+that all those $\setc{i}{0 < i < k}$ except the rearmost called their own
 numbers, we can also say that the other candidate will be the same number which
 the rearmost cat chose \emph{not} to call.
 
@@ -132,40 +132,35 @@ type:
 type_synonym choice = "nat list \<Rightarrow> nat list \<Rightarrow> nat"
 
 text \<open>
-That is, when it is cat $k$'s turn, we give the list of calls heard from
-behind, and the list of hats seen in front, both in order, and the function
-returns the number the cat should call. Incidentally, the lengths of the lists
-give the position of the cat in the line, so we can use a single function to
+That is, when it is cat $k$'s turn, we give the list of calls @{text heard}
+from behind, and the list of hats @{text seen} in front, both in order, and the
+function returns the number the cat should call. The lengths of the lists give
+the position of the cat in the line, so we can use a single function to
 represent the choices of all cats, without loss of generality.
 
-Given only the hat numbers that were heard and seen, the choice function must
-first calculate the choice candidates, by reconstructing the set of all hat
-numbers, and subtracting those @{term xs} that were either heard or seen:
+We can partially implement the @{typ choice} function, first calculating the
+@{text candidates} from which we must choose, by eliminating all those @{text
+heard} and @{text seen}.  We defer the remaining work to a @{text classifier}
+function, which we'll take as a parameter until we know how to implement it:
 \<close>
+
+type_synonym classifier = "nat \<Rightarrow> nat list \<Rightarrow> nat \<Rightarrow> nat list \<Rightarrow> bool"
 
 definition
   candidates :: "nat list \<Rightarrow> nat set"
 where
   "candidates xs \<equiv> {0 .. 1 + length xs} - set xs"
 
-text \<open>
-We'll now partially implement the choice function, deferring most of the work
-to a classification function, which we'll take as a parameter until we know how
-to implement it:
-\<close>
-
-type_synonym classifier = "nat \<Rightarrow> nat list \<Rightarrow> nat \<Rightarrow> nat list \<Rightarrow> bool"
-
 definition
-  choice' :: "classifier \<Rightarrow> choice"
+  choice_of_classifier :: "classifier \<Rightarrow> choice"
 where
-  "choice' classify heard seen \<equiv>
+  "choice_of_classifier classify heard seen \<equiv>
     case sorted_list_of_set (candidates (heard @ seen)) of
       [a,b] \<Rightarrow> if (classify a heard b seen) then b else a"
 
 text \<open>
-Here, we take the @{term candidates}, and pass them to the classifier, along
-with the original arguments @{text heard} and @{text seen}.
+The @{typ classifier} receives the original arguments @{text heard} and @{text
+seen}, as well as the two @{term candidates}, @{text a} and @{text b}.
 
 The order in which we pass these arguments is suggestive of one of the two
 possible orderings of the full set of hats consistent with what is @{text
@@ -175,9 +170,10 @@ imagines hat @{text a} placed on the floor behind the rearmost cat.
 
 The classifier then returns a @{typ bool} that indicates whether the given
 ordering should be accepted or rejected. If accepted, the cat calls the hat it
-had imagined on its own head. If rejected, it calls the other. Since there must
-always be exactly one correct call, we require that the classifier accepts an
-ordering if and only if it would reject the alternative:
+had imagined on its own head. If rejected, it calls the other.
+
+Since there must always be exactly one correct call, we require that the
+classifier accepts an ordering if and only if it would reject the alternative:
 \<close>
 
 definition
@@ -213,48 +209,84 @@ consistent:
 \<close>
 
 definition
-  "accepted_order_consistent classify \<equiv>
+  well_behaved_classifier :: "classifier \<Rightarrow> bool"
+where
+  "well_behaved_classifier classify \<equiv>
     \<forall>a heard b seen a' heard' b' seen'.
       a # heard @ b # seen = a' # heard' @ b' # seen'
         \<longrightarrow> classify a heard b seen = classify a' heard' b' seen'"
 
 text \<open>
-So far, we have investigated some properties that the classifier must have, but
-have not thrown away any information. The classifier is given everything known
-to each cat. The lengths of the arguments @{text heard} and @{text seen} encode
-the cat's position in the line, so we even allow the classifier to behave
-differently for each cat.
+So far, we have investigated some properties that a @{typ classifier} must
+have, but have not thrown away any information. The classifier is given
+everything known to each cat. The lengths of the arguments @{text heard} and
+@{text seen} encode the cat's position in the line, so we even allow the
+classifier to behave differently for each cat.
 
-But the property @{term accepted_order_consistent} suggests that the position
-in the line is not needed, and that we can collapse the classifier's arguments
-into a single list. Given an existing classifier, we can define a function
-which does this:
+But the property @{term well_behaved_classifier} suggests that the position in
+the line is redundant, and we can collapse the classifier's arguments into a
+single list. Given an existing classifier, we can derive such a function:
 \<close>
 
 type_synonym parity = "nat list \<Rightarrow> bool"
 
 definition
-  parity :: "classifier \<Rightarrow> parity"
+  parity_of_classifier :: "classifier \<Rightarrow> parity"
 where
-  "parity classify xs \<equiv>
-    case xs of x # y # zs \<Rightarrow> classify x [] y zs | _ \<Rightarrow> True"
+  "parity_of_classifier classify hats \<equiv>
+    case hats of a # b # seen \<Rightarrow> classify a [] b seen"
 
 text \<open>
-We can prove that it has all the behaviours of a well-defined classifier, which
-means that, in fact, we have not thrown away anything:
+We can prove that all the behaviours of a well-behaved classifier are captured
+by the @{typ parity} function derived from it. This confirms that we have not
+thrown away anything:
 \<close>
 
-lemma parity_complete:
-  "accepted_order_consistent classify \<Longrightarrow>
-    \<forall>a heard b seen. classify a heard b seen = parity classify (a # heard @ b # seen)"
-  unfolding accepted_order_consistent_def parity_def
-  apply (intro allI)
-  apply (drule_tac x=a in spec)
-  apply (drule_tac x=heard in spec)
-  apply (drule_tac x=b in spec)
-  apply (drule_tac x=seen in spec)
-  apply (case_tac heard)
-  by auto
+lemma parity_of_classifier_complete:
+  "well_behaved_classifier classify \<Longrightarrow>
+    \<forall>a heard b seen.
+      classify a heard b seen = parity_of_classifier classify (a # heard @ b # seen)"
+  unfolding well_behaved_classifier_def parity_of_classifier_def
+  by (elim all_forward; case_tac heard) auto
+
+text \<open>
+We can also restate the required @{term classifier_correct} property in terms
+of @{typ parity} functions, and prove a suitable equivalence:
+\<close>
+
+definition
+  parity_correct :: "parity \<Rightarrow> bool"
+where
+  "parity_correct parity \<equiv>
+    \<forall>a heard b seen.
+      parity (a # heard @ b # seen) \<longleftrightarrow> \<not> parity (b # heard @ a # seen)"
+
+lemma parity_correct_classifier_correct:
+  "classifier_correct classify \<longleftrightarrow> parity_correct (parity_of_classifier classify)"
+  unfolding well_behaved_classifier_def parity_of_classifier_def
+            classifier_correct_def parity_correct_def
+  by blast
+
+text \<open>
+Finally, we can rephrase the @{typ choice} function in terms of a @{typ parity}
+function, and forget about @{typ classifier} functions altogether:
+\<close>
+
+definition
+  choice_of_parity :: "parity \<Rightarrow> choice"
+where
+  "choice_of_parity parity heard seen \<equiv>
+    case sorted_list_of_set (candidates (heard @ seen)) of
+      [a,b] \<Rightarrow> if parity (a # heard @ b # seen) then b else a"
+
+text \<open>
+Based on the informal derivation so far, our claim is that any function
+satisfying @{term parity_correct} is sufficient to solve the puzzle. Next,
+we'll derive an implementation of such a @{typ parity} function, and then
+formally prove that it solves the puzzle.
+\<close>
+
+section \<open>The parity function\<close>
 
 section \<open>Proof\<close>
 

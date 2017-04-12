@@ -2,7 +2,7 @@ subsection \<open>Solving the puzzle\<close>
 
 (*<*)
 theory Puzzle
-imports Lib
+imports Parity_Swap Lib
 begin
 (*>*)
 

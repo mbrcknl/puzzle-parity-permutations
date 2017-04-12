@@ -4,12 +4,11 @@ session Puzzle = HOL +
     , document_output=document
     , document=pdf
     ]
-  theories
-    Introduction
-    Parity_Swap
   theories [document=false]
     Lib
   theories
+    Introduction
+    Parity_Swap
     Puzzle
   theories [document=false]
     Parity_Inversions
