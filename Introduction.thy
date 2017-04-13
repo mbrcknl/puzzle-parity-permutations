@@ -180,8 +180,8 @@ definition
   classifier_correct :: "classifier \<Rightarrow> bool"
 where
   "classifier_correct classify \<equiv>
-    \<forall>a heard b seen.
-      classify a heard b seen \<longleftrightarrow> \<not> classify b heard a seen"
+    \<forall>a heard b seen. distinct (a # heard @ b # seen) \<longrightarrow>
+      (classify a heard b seen \<longleftrightarrow> \<not> classify b heard a seen)"
 
 text \<open>
 This means that we can say which is the accepted ordering, regardless of which
@@ -209,9 +209,9 @@ consistent:
 \<close>
 
 definition
-  well_behaved_classifier :: "classifier \<Rightarrow> bool"
+  classifier_well_behaved :: "classifier \<Rightarrow> bool"
 where
-  "well_behaved_classifier classify \<equiv>
+  "classifier_well_behaved classify \<equiv>
     \<forall>a heard b seen a' heard' b' seen'.
       a # heard @ b # seen = a' # heard' @ b' # seen'
         \<longrightarrow> classify a heard b seen = classify a' heard' b' seen'"
@@ -223,7 +223,7 @@ everything known to each cat. The lengths of the arguments @{text heard} and
 @{text seen} encode the cat's position in the line, so we even allow the
 classifier to behave differently for each cat.
 
-But the property @{term well_behaved_classifier} suggests that the position in
+But the property @{term classifier_well_behaved} suggests that the position in
 the line is redundant, and we can collapse the classifier's arguments into a
 single list. Given an existing classifier, we can derive such a function:
 \<close>
@@ -243,10 +243,10 @@ thrown away anything:
 \<close>
 
 lemma parity_of_classifier_complete:
-  "well_behaved_classifier classify \<Longrightarrow>
+  "classifier_well_behaved classify \<Longrightarrow>
     \<forall>a heard b seen.
       classify a heard b seen = parity_of_classifier classify (a # heard @ b # seen)"
-  unfolding well_behaved_classifier_def parity_of_classifier_def
+  unfolding classifier_well_behaved_def parity_of_classifier_def
   by (elim all_forward; case_tac heard) auto
 
 text \<open>
@@ -258,18 +258,21 @@ definition
   parity_correct :: "parity \<Rightarrow> bool"
 where
   "parity_correct parity \<equiv>
-    \<forall>a heard b seen.
-      parity (a # heard @ b # seen) \<longleftrightarrow> \<not> parity (b # heard @ a # seen)"
+    \<forall>a heard b seen. distinct (a # heard @ b # seen) \<longrightarrow>
+      (parity (a # heard @ b # seen) \<longleftrightarrow> \<not> parity (b # heard @ a # seen))"
 
 lemma parity_correct_classifier_correct:
-  "classifier_correct classify \<longleftrightarrow> parity_correct (parity_of_classifier classify)"
-  unfolding well_behaved_classifier_def parity_of_classifier_def
-            classifier_correct_def parity_correct_def
-  by blast
+  assumes "classifier_well_behaved classify"
+  shows "classifier_correct classify \<longleftrightarrow> parity_correct (parity_of_classifier classify)"
+  unfolding classifier_correct_def parity_correct_def
+  apply (subst parity_of_classifier_complete[rule_format, OF assms])+
+  apply (rule refl)
+  done
 
 text \<open>
-Finally, we can rephrase the @{typ choice} function in terms of a @{typ parity}
-function, and forget about @{typ classifier} functions altogether:
+Now that we're confident that a @{typ parity} function is sufficient, so we can
+rephrase the @{typ choice} function in terms of a @{typ parity} function, and
+forget about @{typ classifier} functions altogether:
 \<close>
 
 definition
