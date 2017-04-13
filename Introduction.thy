@@ -5,6 +5,7 @@ begin
 (*>*)
 
 text \<open>
+
 Meet Schr\"odinger, who travels the world with an unusually clever clowder of
 $n$ talking cats. In their latest show, the cats stand in a line.
 Schr\"odinger asks a volunteer to take $n+1$ hats, numbered zero to $n$, and
@@ -14,11 +15,13 @@ spare hat. The cats then take turns, each calling out a single number from the
 set $\setc*{i}{0 \leq i \leq n}$, without repeating any number previously
 called, and without any other communication. Although the first call is allowed
 to be wrong, the remaining cats always call out the numbers on their own hats.
+
 \<close>
 
 section \<open>Introduction\<close>
 
 text \<open>
+
 In this article, we will figure out how the cats do this. We'll start with some
 informal analysis, deriving the solution by repeatedly asking ourselves the
 question: if there is a solution, what must it look like? Once we've identified
@@ -27,40 +30,73 @@ ultimately showing that the method always works.
 
 Along the way, we'll rediscover a fundamental property of permutation groups,
 and we'll look at some of the basic techniques of formal mathematical proof.
+
 \<close>
 
 section \<open>Initial observations\<close>
 
 text \<open>
+
 We can begin to structure our thinking by making some initial observations.
+
 \<close>
 
-subsection \<open>Order of calls\<close>
+subsection \<open>Ordering the calls\<close>
 
 text \<open>
+
 The rules require each cat to make exactly one call, but do not specify the
-order in which they do this. We will choose the order which makes best use of
-available information. The order of calls cannot change what is visible to each
-cat, so we are only interested in maximising the value of audible information.
+order in which they do this. We can see that the order we choose affects the
+distribution of information:
 
-It might seem that audible information can flow from any cat to any other cat,
-but in fact it only travels forwards. When a cat makes a call, all of the
-information available to it is already known to all the cats behind it.
-Therefore, cats towards the rear cannot learn anything from the choices made by
-cats towards the front.
+\begin{itemize}
 
-However, cats towards the front \emph{can} learn things from choices made by
-cats towards the rear, because those choices can encode knowledge of hats which
-are not visible from the front.
+  \item Visible information remains constant over time, but cats towards the
+  rear see more than cats towards the front.
 
-We therefore propose that the cats should take turns from the rearmost towards
-the front. This maximises the audible information available to each cat at the
-time it makes its choice.
+  \item Audible information increases over time, but at any particular point in
+  time, all cats have heard the same things.
+
+\end{itemize}
+
+We observe that the cats can only ever communicate information \emph{forwards},
+never backwards:
+
+\begin{itemize}
+
+  \item When a cat makes a call, all of the information available to it is
+  already known to all the cats behind it. Therefore, cats towards the rear can
+  never learn anything from the choices made by cats towards the front.
+
+  \item However, cats towards the front \emph{can} learn things from choices
+  made by cats towards the rear, because those choices might encode knowledge
+  of hats which are not visible from the front.
+
+\end{itemize}
+
+We propose that the cats should take turns from the rearmost towards the front,
+ensuring that:
+
+\begin{itemize}
+
+  \item The cat making the choice is always the one with the most information.
+
+  \item Every call but the last has the potential to communicate useful
+  information.
+
+\end{itemize}
+
+We won't attempt to prove that this ordering is necessary to solve the puzzle.
+However, by choosing an order, we drastically reduce the space of possible
+solutions we consider, so we should at least have an informal justificaton for
+the order we choose.
+
 \<close>
 
 subsection \<open>Limited information\<close>
 
 text \<open>
+
 Each cat sees the hats in front of it, and hears the calls made by those behind
 it, but otherwise receives no information. In particular, no cat knows the
 rearmost cat's number. Until Schr\"odinger reveals it at the end of the
@@ -72,7 +108,7 @@ get it right!
 
 Surprisingly, knowing which cats must get it right makes our job easier. When
 considering how some cat $k$ makes its choice, we can assume that all the cats
-$\setc*{i}{0 < i < k}$, i.e. those behind it, except the rearmost, have already
+$\setc*{i}{0 < i < k}$, i.e.\ those behind it, except the rearmost, have already
 made the right choices.
 
 This might seem like circular reasoning, but it's not. In principle, we build
@@ -82,7 +118,18 @@ proving that cat $k$ makes the right choice. Mathematical induction merely says
 that if all steps are alike, we can take them all at once by considering an
 arbitrary cat $k$, and assuming we've already considered all the cats
 $\setc{i}{0 \leq i < k}$ behind it.
+
+We can formalise this with a proof:
+
 \<close>
+
+lemma spoken_correct_induct:
+  assumes "\<And>k. k \<in> {1 ..< length assigned}
+                 \<Longrightarrow> \<forall>i \<in> {1 ..< k}. spoken ! i = assigned ! i
+                 \<Longrightarrow> spoken ! k = assigned ! k"
+  shows "k \<in> {1 ..< length assigned} \<Longrightarrow> spoken ! k = assigned ! k"
+  by (induct k rule: nat_less_induct)
+     (meson assms atLeastLessThan_iff less_imp_le less_le_trans)
 
 subsection \<open>Candidate selection\<close>
 
@@ -266,8 +313,7 @@ lemma parity_correct_classifier_correct:
   shows "classifier_correct classify \<longleftrightarrow> parity_correct (parity_of_classifier classify)"
   unfolding classifier_correct_def parity_correct_def
   apply (subst parity_of_classifier_complete[rule_format, OF assms])+
-  apply (rule refl)
-  done
+  by (rule refl)
 
 text \<open>
 Now that we're confident that a @{typ parity} function is sufficient, so we can
@@ -282,6 +328,13 @@ where
     case sorted_list_of_set (candidates (heard @ seen)) of
       [a,b] \<Rightarrow> if parity (a # heard @ b # seen) then b else a"
 
+lemma choice_of_parity_choice_of_classifier:
+  assumes "classifier_well_behaved classify"
+  shows "choice_of_parity (parity_of_classifier classify) = choice_of_classifier classify"
+  unfolding choice_of_parity_def choice_of_classifier_def
+  apply (subst parity_of_classifier_complete[rule_format, OF assms])
+  by (rule refl)
+
 text \<open>
 Based on the informal derivation so far, our claim is that any function
 satisfying @{term parity_correct} is sufficient to solve the puzzle. Next,
@@ -290,6 +343,8 @@ formally prove that it solves the puzzle.
 \<close>
 
 section \<open>The parity function\<close>
+
+
 
 section \<open>Proof\<close>
 
