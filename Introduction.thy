@@ -24,13 +24,32 @@ section \<open>Introduction\<close>
 text \<open>
 
 In this article, we will figure out how the cats do this. We'll start with some
-informal analysis, deriving the solution by repeatedly asking ourselves the
-question: if there is a solution, what must it look like? Once we've identified
-the key ingredient of the solution, we'll turn to formal proof in Isabelle/HOL,
-ultimately showing that the method always works.
+informal analysis, deriving the solution by asking what properties it must
+have, and refining these properties until we can realise them with a concrete
+algorithm.  We'll also develop a formal proof in Isabelle/HOL that the method
+always works.
 
 Along the way, we'll rediscover a fundamental property of permutation groups,
-and we'll look at some of the basic techniques of formal mathematical proof.
+and we'll gain some familiarity with some basic tools of formal mathematical
+proof.
+
+For the informal analysis, we'll work from the top down, so you can see the
+solution unfold gradually. Each refinement will be small, and may seem like it
+is the only possible step.
+
+We would like to use Isabelle/HOL to make our informal analysis more precise.
+However, our proof is inherently bottom up, from the solution we ultimately
+identify to a theorem that it solves the puzzle.
+
+So, to allow us to develop the proof as we work top down, we need to turn the
+proof upside down. We'll do this by temporarily assuming things we believe must
+be true for the puzzle to have a solution, but which we don't yet know how to
+prove. To avoid repeating assumptions, we'll use the \emph{locale} mechanism of
+Isabelle/HOL to create named bundles of assumptions. Later, we'll discharge
+assumptions using the locale \emph{interpretataion} mechanism.
+
+Proofs developed this way turn out to be more convoluted than they need to be,
+so the appendix contains a version of the proof written in a more direct style.
 
 \<close>
 
@@ -113,10 +132,10 @@ subsection \<open>Reasoning by induction\<close>
 text \<open>
 
 Knowing which cats must get it right makes our job easier, since we don't need
-to keep track of whether the cats have used their free pass. When considering
-how some cat $k$ makes its choice, we can assume that all the cats $\setc{i}{0
-< i < k}$, i.e.\ those behind it, except the rearmost, have already made the
-right choices.
+to keep track of whether the cats have used up their free pass. When
+considering how some cat $k$ makes its choice, we can assume that all the cats
+$\setc{i}{0 < i < k}$, i.e.\ those behind it, except the rearmost, have already
+made the right choices.
 
 This might seem like circular reasoning, but it's not. In principle, we build
 up what we know from the rearmost cat, one cat at a time towards the front,
