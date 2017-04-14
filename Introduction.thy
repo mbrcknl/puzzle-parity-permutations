@@ -13,8 +13,9 @@ randomly assign one to each cat, so that there is one spare. Each cat sees all
 of the hats in front of it, but not its own hat, nor those behind, nor the
 spare hat. The cats then take turns, each calling out a single number from the
 set $\setc*{i}{0 \leq i \leq n}$, without repeating any number previously
-called, and without any other communication. Although the first call is allowed
-to be wrong, the remaining cats always call out the numbers on their own hats.
+called, and without any other communication. The cats are allowed a single
+incorrect guess, but otherwise every cat must call out the number on its own
+hat.
 
 \<close>
 
@@ -81,8 +82,7 @@ ensuring that:
 
   \item The cat making the choice is always the one with the most information.
 
-  \item Every call but the last has the potential to communicate useful
-  information.
+  \item We maximise the number of cats that may learn something from each call.
 
 \end{itemize}
 
@@ -93,7 +93,7 @@ the order we choose.
 
 \<close>
 
-subsection \<open>Limited information\<close>
+subsection \<open>The rearmost cat is special\<close>
 
 text \<open>
 
@@ -106,10 +106,17 @@ To guarantee success, the cats must therefore assume the worst: that the
 rearmost cat got it wrong. But this means that all the other cats \emph{must}
 get it right!
 
-Surprisingly, knowing which cats must get it right makes our job easier. When
-considering how some cat $k$ makes its choice, we can assume that all the cats
-$\setc*{i}{0 < i < k}$, i.e.\ those behind it, except the rearmost, have already
-made the right choices.
+\<close>
+
+subsection \<open>Reasoning by induction\<close>
+
+text \<open>
+
+Knowing which cats must get it right makes our job easier, since we don't need
+to keep track of whether the cats have used their free pass. When considering
+how some cat $k$ makes its choice, we can assume that all the cats $\setc{i}{0
+< i < k}$, i.e.\ those behind it, except the rearmost, have already made the
+right choices.
 
 This might seem like circular reasoning, but it's not. In principle, we build
 up what we know from the rearmost cat, one cat at a time towards the front,
@@ -117,15 +124,13 @@ using what we've already shown about cats $\setc{i}{0 \leq i < k}$ when we're
 proving that cat $k$ makes the right choice. Mathematical induction merely says
 that if all steps are alike, we can take them all at once by considering an
 arbitrary cat $k$, and assuming we've already considered all the cats
-$\setc{i}{0 \leq i < k}$ behind it.
-
-We can formalise this with a proof:
+$\setc{i}{0 \leq i < k}$ behind it:
 
 \<close>
 
-lemma spoken_correct_induct:
+lemma assigned_induct:
   assumes "\<And>k. k \<in> {1 ..< length assigned}
-                 \<Longrightarrow> \<forall>i \<in> {1 ..< k}. spoken ! i = assigned ! i
+                 \<Longrightarrow> \<forall>i \<in> {1 ..< k}. spoken ! i  = assigned ! i
                  \<Longrightarrow> spoken ! k = assigned ! k"
   shows "k \<in> {1 ..< length assigned} \<Longrightarrow> spoken ! k = assigned ! k"
   by (induct k rule: nat_less_induct)
@@ -134,6 +139,7 @@ lemma spoken_correct_induct:
 subsection \<open>Candidate selection\<close>
 
 text \<open>
+
 According to the rules, no cat may repeat a number already called by another
 cat behind it. With a little thought, we can also say that no cat may call a
 number that it can see ahead of it. If it did, there would be at least two
@@ -144,8 +150,19 @@ $t$ who is in front of $k$. Hat numbers are unique, so $k$'s number must be
 different from $t$'s, and therefore $k$'s call is wrong. But $t$ may not repeat
 the number that $k$ called, so $t$ is also wrong.
 
-This means that each cat $k$ has to choose between exactly two candidate
-numbers: those left over after removing all the numbers it has seen and heard.
+This means that each cat $k$ has to choose between exactly two candidate hats:
+those left over after excluding all the numbers it has seen and heard.
+
+\<close>
+
+definition
+  candidates :: "nat list \<Rightarrow> nat list \<Rightarrow> nat set"
+where
+  "candidates heard seen \<equiv>
+    let excluded = heard @ seen in {0 .. 1 + length excluded} - set excluded"
+
+text \<open>
+
 Since none of the cats $\setc{i}{0 \leq i < k}$ previously called $k$'s number,
 $k$'s own number is one of those candidates. Taking into account our assumption
 that all those $\setc{i}{0 < i < k}$ except the rearmost called their own
@@ -160,11 +177,13 @@ This bears repeating, lest we miss its significance!
 Working from the rear to the front, if each cat rejects all the numbers it has
 heard and seen, and of the remaining numbers, \emph{additionally rejects the
 same number as the rearmost cat}, then the puzzle is solved.
+
 \<close>
 
 section \<open>The choice function\<close>
 
 text \<open>
+
 We'll now derive the method the cats use to ensure all of them reject the same
 hat. We assume that the cats have agreed beforehand on the algorithm each cat
 will \emph{individually} apply, and have convinced themselves that the agreed
@@ -174,11 +193,13 @@ assigned to them.
 We can represent the individual algorithm as a function of the information an
 individual cat receives. We don't yet know its definition, but we can write its
 type:
+
 \<close>
 
 type_synonym choice = "nat list \<Rightarrow> nat list \<Rightarrow> nat"
 
 text \<open>
+
 That is, when it is cat $k$'s turn, we give the list of calls @{text heard}
 from behind, and the list of hats @{text seen} in front, both in order, and the
 function returns the number the cat should call. The lengths of the lists give
@@ -189,23 +210,20 @@ We can partially implement the @{typ choice} function, first calculating the
 @{text candidates} from which we must choose, by eliminating all those @{text
 heard} and @{text seen}.  We defer the remaining work to a @{text classifier}
 function, which we'll take as a parameter until we know how to implement it:
+
 \<close>
 
 type_synonym classifier = "nat \<Rightarrow> nat list \<Rightarrow> nat \<Rightarrow> nat list \<Rightarrow> bool"
 
 definition
-  candidates :: "nat list \<Rightarrow> nat set"
-where
-  "candidates xs \<equiv> {0 .. 1 + length xs} - set xs"
-
-definition
   choice_of_classifier :: "classifier \<Rightarrow> choice"
 where
   "choice_of_classifier classify heard seen \<equiv>
-    case sorted_list_of_set (candidates (heard @ seen)) of
+    case sorted_list_of_set (candidates heard seen) of
       [a,b] \<Rightarrow> if (classify a heard b seen) then b else a"
 
 text \<open>
+
 The @{typ classifier} receives the original arguments @{text heard} and @{text
 seen}, as well as the two @{term candidates}, @{text a} and @{text b}.
 
@@ -221,6 +239,7 @@ had imagined on its own head. If rejected, it calls the other.
 
 Since there must always be exactly one correct call, we require that the
 classifier accepts an ordering if and only if it would reject the alternative:
+
 \<close>
 
 definition
@@ -231,6 +250,7 @@ where
       (classify a heard b seen \<longleftrightarrow> \<not> classify b heard a seen)"
 
 text \<open>
+
 This means that we can say which is the accepted ordering, regardless of which
 ordering we actually passed to the classifier.
 
@@ -253,6 +273,7 @@ also accepted by the classifier.
 
 We can write down the required property that the accepted orderings must be
 consistent:
+
 \<close>
 
 definition
@@ -264,6 +285,7 @@ where
         \<longrightarrow> classify a heard b seen = classify a' heard' b' seen'"
 
 text \<open>
+
 So far, we have investigated some properties that a @{typ classifier} must
 have, but have not thrown away any information. The classifier is given
 everything known to each cat. The lengths of the arguments @{text heard} and
@@ -273,6 +295,7 @@ classifier to behave differently for each cat.
 But the property @{term classifier_well_behaved} suggests that the position in
 the line is redundant, and we can collapse the classifier's arguments into a
 single list. Given an existing classifier, we can derive such a function:
+
 \<close>
 
 type_synonym parity = "nat list \<Rightarrow> bool"
@@ -284,9 +307,11 @@ where
     case hats of a # b # seen \<Rightarrow> classify a [] b seen"
 
 text \<open>
+
 We can prove that all the behaviours of a well-behaved classifier are captured
 by the @{typ parity} function derived from it. This confirms that we have not
 thrown away anything:
+
 \<close>
 
 lemma parity_of_classifier_complete:
@@ -297,8 +322,10 @@ lemma parity_of_classifier_complete:
   by (elim all_forward; case_tac heard) auto
 
 text \<open>
+
 We can also restate the required @{term classifier_correct} property in terms
 of @{typ parity} functions, and prove a suitable equivalence:
+
 \<close>
 
 definition
@@ -316,16 +343,18 @@ lemma parity_correct_classifier_correct:
   by (rule refl)
 
 text \<open>
+
 Now that we're confident that a @{typ parity} function is sufficient, so we can
 rephrase the @{typ choice} function in terms of a @{typ parity} function, and
 forget about @{typ classifier} functions altogether:
+
 \<close>
 
 definition
   choice_of_parity :: "parity \<Rightarrow> choice"
 where
   "choice_of_parity parity heard seen \<equiv>
-    case sorted_list_of_set (candidates (heard @ seen)) of
+    case sorted_list_of_set (candidates heard seen) of
       [a,b] \<Rightarrow> if parity (a # heard @ b # seen) then b else a"
 
 lemma choice_of_parity_choice_of_classifier:
@@ -336,10 +365,12 @@ lemma choice_of_parity_choice_of_classifier:
   by (rule refl)
 
 text \<open>
+
 Based on the informal derivation so far, our claim is that any function
 satisfying @{term parity_correct} is sufficient to solve the puzzle. Next,
 we'll derive an implementation of such a @{typ parity} function, and then
 formally prove that it solves the puzzle.
+
 \<close>
 
 section \<open>The parity function\<close>
