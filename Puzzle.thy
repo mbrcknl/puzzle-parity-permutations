@@ -102,9 +102,8 @@ context
   notes parity.simps(2) [simp del]
 begin
 
-lemma assigned_0:
-  "assigned ! 0 # drop (Suc 0) assigned = assigned"
-  using exists by (simp add: Cons_nth_drop_Suc)
+lemmas assigned_0
+  = Cons_nth_drop_Suc[OF exists, simplified]
 
 lemma candidates_0:
   "candidates (drop (Suc 0) assigned) = {spare, assigned ! 0}"

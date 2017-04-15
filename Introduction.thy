@@ -30,8 +30,7 @@ algorithm.  We'll also develop a formal proof in Isabelle/HOL that the method
 always works.
 
 Along the way, we'll rediscover a fundamental property of permutation groups,
-and we'll gain some familiarity with some basic tools of formal mathematical
-proof.
+and we'll gain some familiarity with basic tools of formal mathematical proof.
 
 For the informal analysis, we'll work from the top down, so you can see the
 solution unfold gradually. Each refinement will be small, and may seem like it
@@ -48,8 +47,35 @@ prove. To avoid repeating assumptions, we'll use the \emph{locale} mechanism of
 Isabelle/HOL to create named bundles of assumptions. Later, we'll discharge
 assumptions using the locale \emph{interpretataion} mechanism.
 
-Proofs developed this way turn out to be more convoluted than they need to be,
-so the appendix contains a version of the proof written in a more direct style.
+To illustrate, we can use a locale to describe the basic setup of the puzzle:
+
+\<close>
+
+locale assigned =
+  -- "the spare hat"
+  fixes spare :: "nat"
+  -- "hats assigned to cats, in order from back to front"
+  fixes assigned :: "nat list"
+  -- "the set of all hat numbers"
+  assumes assign: "set (spare # assigned) = {0 .. length assigned}"
+
+text \<open>
+
+In this locale, we can use a cardinality argument to prove that the hats are
+numbered distinctly:
+
+\<close>
+
+lemma (in assigned) distinct: "distinct (spare # assigned)"
+  apply (rule card_distinct)
+  apply (subst assign)
+  by auto
+
+text \<open>
+
+The proof developed this way turns out to be more convoluted than it needs to
+be, so the appendix contains a version of the proof written in a more direct
+style.
 
 \<close>
 
@@ -105,12 +131,21 @@ ensuring that:
 
 \end{itemize}
 
-We won't attempt to prove that this ordering is necessary to solve the puzzle.
-However, by choosing an order, we drastically reduce the space of possible
-solutions we consider, so we should at least have an informal justificaton for
-the order we choose.
+We'll use a locale to describe the information flow:
 
 \<close>
+
+locale spoken = assigned +
+  -- "calls made by cats, in order from back to front"
+  fixes spoken :: "nat list"
+  -- "calls @{text heard} and hats @{text seen} by each cat"
+  fixes heard seen :: "nat \<Rightarrow> nat list"
+  -- "each cat speaks exactly once"
+  assumes length: "length spoken = length assigned"
+  -- "cat $k$ has @{text heard} what was called by $k$ cats to the rear"
+  assumes heard: "heard k = take k spoken"
+  -- "cat $k$ has @{text seen} the hats to the front"
+  assumes seen: "seen k = drop (Suc k) assigned"
 
 subsection \<open>The rearmost cat is special\<close>
 
@@ -141,19 +176,41 @@ This might seem like circular reasoning, but it's not. In principle, we build
 up what we know from the rearmost cat, one cat at a time towards the front,
 using what we've already shown about cats $\setc{i}{0 \leq i < k}$ when we're
 proving that cat $k$ makes the right choice. Mathematical induction merely says
-that if all steps are alike, we can take them all at once by considering an
-arbitrary cat $k$, and assuming we've already considered all the cats
-$\setc{i}{0 \leq i < k}$ behind it:
+that if all steps are alike, we can take an arbitrary number of them all at
+once, by considering an arbitrary cat $k$, and assuming we've already
+considered all the cats $\setc{i}{0 \leq i < k}$ behind it:
 
 \<close>
 
-lemma assigned_induct:
+lemma (in spoken) assigned_induct:
   assumes "\<And>k. k \<in> {1 ..< length assigned}
-                 \<Longrightarrow> \<forall>i \<in> {1 ..< k}. spoken ! i  = assigned ! i
+                 \<Longrightarrow> \<forall>i \<in> {1 ..< k}. spoken ! i = assigned ! i
                  \<Longrightarrow> spoken ! k = assigned ! k"
   shows "k \<in> {1 ..< length assigned} \<Longrightarrow> spoken ! k = assigned ! k"
   by (induct k rule: nat_less_induct)
      (meson assms atLeastLessThan_iff less_imp_le less_le_trans)
+
+text \<open>
+
+We'll use a locale to reason in the context of this induction hypothesis:
+
+\<close>
+
+locale cat_k = spoken +
+  fixes k :: "nat"
+  assumes k_min: "0 < k"
+  assumes k_max: "k < length assigned"
+  assumes IH: "\<forall>i \<in> {1 ..< k}. spoken ! i = assigned ! i"
+
+lemma (in cat_k) k_max_spoken: "k < length spoken"
+  using k_max length by simp
+
+lemma (in cat_k) heard_k:
+  "heard k = spoken ! 0 # map (op ! assigned) [Suc 0 ..< k]"
+  using heard IH
+        take_map_nth[OF less_imp_le, OF k_max_spoken]
+        range_extract_head[OF k_min]
+  by auto
 
 subsection \<open>Candidate selection\<close>
 
@@ -169,16 +226,17 @@ $t$ who is in front of $k$. Hat numbers are unique, so $k$'s number must be
 different from $t$'s, and therefore $k$'s call is wrong. But $t$ may not repeat
 the number that $k$ called, so $t$ is also wrong.
 
-This means that each cat $k$ has to choose between exactly two candidate hats:
-those left over after excluding all the numbers it has seen and heard.
+Each cat $k$ has to choose between exactly two candidate hats: those left over
+after excluding all the numbers it has seen and heard:
 
 \<close>
 
-definition
-  candidates :: "nat list \<Rightarrow> nat list \<Rightarrow> nat set"
-where
-  "candidates heard seen \<equiv>
-    let excluded = heard @ seen in {0 .. 1 + length excluded} - set excluded"
+locale candidates = spoken +
+  fixes candidates :: "nat \<Rightarrow> nat set"
+  assumes candidates:
+    "candidates i \<equiv>
+      let excluded = heard i @ seen i in
+        {0 .. 1 + length excluded} - set excluded"
 
 text \<open>
 
@@ -190,6 +248,64 @@ the rearmost cat chose \emph{not} to call.
 
 To solve the puzzle, we therefore just need to ensure that every cat $k$
 rejects the same number that the rearmost cat rejected.
+
+To formalise this, we'll first assume that the rearmost cat chooses one of its
+@{text candidates}, and define @{text rejected} as the other:
+
+\<close>
+
+locale cat_0 = candidates + cat_k +
+  fixes rejected :: "nat"
+  assumes spoken_0: "spoken ! 0 \<in> candidates 0"
+  assumes rejected: "rejected = (if spoken ! 0 = spare then assigned ! 0 else spare)"
+
+text \<open>
+
+We can prove that the rearmost cat calculates appropriate @{term candidates}:
+
+\<close>
+
+lemma (in cat_k) exists: "0 < length assigned"
+  using k_min k_max by auto
+
+lemmas (in cat_k) assigned_0
+  = Cons_nth_drop_Suc[OF exists, simplified]
+
+lemma (in cat_0) candidates_0: "candidates 0 = {spare, assigned ! 0}"
+  proof -
+    let ?excluded = "heard 0 @ seen 0"
+    have len: "1 + length ?excluded = length assigned"
+      unfolding heard seen using exists by simp
+    have set: "set ?excluded = {0..length assigned} - {spare, assigned ! 0}"
+      unfolding heard seen
+      using assign assigned_0 distinct
+            Diff_insert2 Diff_insert_absorb distinct.simps(2)
+            list.simps(15) self_append_conv2 take_0
+      by metis
+    show ?thesis
+      unfolding candidates Let_def
+      unfolding len set
+      unfolding Diff_Diff_Int subset_absorb_r
+      unfolding assign[symmetric]
+      using exists by auto
+  qed
+
+text \<open>
+
+If we additionally assume that cat $k$ calculates the expected @{term
+candidates}, and rejects the same hat as the rearmost cat, then we can prve
+that cat $k$ chooses its assigned hat:
+
+\<close>
+
+locale spoken_k = cat_0 +
+  assumes spoken_k: "spoken ! k \<in> {rejected, assigned ! k}"
+  assumes rejected_k: "spoken ! k \<noteq> rejected"
+
+lemma (in spoken_k) spoken_correct: "spoken ! k = assigned ! k"
+  using spoken_k rejected_k by simp
+
+text \<open>
 
 This bears repeating, lest we miss its significance!
 
@@ -227,23 +343,23 @@ represent the choices of all cats, without loss of generality.
 
 We can partially implement the @{typ choice} function, first calculating the
 @{text candidates} from which we must choose, by eliminating all those @{text
-heard} and @{text seen}.  We defer the remaining work to a @{text classifier}
+heard} and @{text seen}. We defer the remaining work to a @{text classifier}
 function, which we'll take as a parameter until we know how to implement it:
 
 \<close>
 
 type_synonym classifier = "nat \<Rightarrow> nat list \<Rightarrow> nat \<Rightarrow> nat list \<Rightarrow> bool"
 
-definition
-  choice_of_classifier :: "classifier \<Rightarrow> choice"
-where
-  "choice_of_classifier classify heard seen \<equiv>
-    case sorted_list_of_set (candidates heard seen) of
-      [a,b] \<Rightarrow> if (classify a heard b seen) then b else a"
+locale classifier = candidates +
+  fixes classify :: "classifier"
+  assumes choice:
+    "\<And>k. spoken ! k \<equiv>
+            case sorted_list_of_set (candidates k) of
+              [a,b] \<Rightarrow> if (classify a (heard k) b (seen k)) then b else a"
 
 text \<open>
 
-The @{typ classifier} receives the original arguments @{text heard} and @{text
+The @{text classifier} receives the original arguments @{text heard} and @{text
 seen}, as well as the two @{term candidates}, @{text a} and @{text b}.
 
 The order in which we pass these arguments is suggestive of one of the two
@@ -368,20 +484,6 @@ rephrase the @{typ choice} function in terms of a @{typ parity} function, and
 forget about @{typ classifier} functions altogether:
 
 \<close>
-
-definition
-  choice_of_parity :: "parity \<Rightarrow> choice"
-where
-  "choice_of_parity parity heard seen \<equiv>
-    case sorted_list_of_set (candidates heard seen) of
-      [a,b] \<Rightarrow> if parity (a # heard @ b # seen) then b else a"
-
-lemma choice_of_parity_choice_of_classifier:
-  assumes "classifier_well_behaved classify"
-  shows "choice_of_parity (parity_of_classifier classify) = choice_of_classifier classify"
-  unfolding choice_of_parity_def choice_of_classifier_def
-  apply (subst parity_of_classifier_complete[rule_format, OF assms])
-  by (rule refl)
 
 text \<open>
 
