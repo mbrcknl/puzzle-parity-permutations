@@ -140,12 +140,12 @@ locale spoken = assigned +
   fixes spoken :: "nat list"
   -- "calls @{text heard} and hats @{text seen} by each cat"
   fixes heard seen :: "nat \<Rightarrow> nat list"
+  -- "cat $k$ has @{text heard} what was called by $k$ cats to the rear"
+  defines heard: "heard k \<equiv> take k spoken"
+  -- "cat $k$ has @{text seen} the hats to the front"
+  defines seen: "seen k \<equiv> drop (Suc k) assigned"
   -- "each cat speaks exactly once"
   assumes length: "length spoken = length assigned"
-  -- "cat $k$ has @{text heard} what was called by $k$ cats to the rear"
-  assumes heard: "heard k = take k spoken"
-  -- "cat $k$ has @{text seen} the hats to the front"
-  assumes seen: "seen k = drop (Suc k) assigned"
 
 subsection \<open>The rearmost cat is special\<close>
 
@@ -207,7 +207,7 @@ lemma (in cat_k) k_max_spoken: "k < length spoken"
 
 lemma (in cat_k) heard_k:
   "heard k = spoken ! 0 # map (op ! assigned) [Suc 0 ..< k]"
-  using heard IH
+  using heard[of k] IH
         take_map_nth[OF less_imp_le, OF k_max_spoken]
         range_extract_head[OF k_min]
   by auto
@@ -232,11 +232,14 @@ after excluding all the numbers it has seen and heard:
 \<close>
 
 locale candidates = spoken +
+  fixes excluded :: "nat \<Rightarrow> nat list"
   fixes candidates :: "nat \<Rightarrow> nat set"
-  assumes candidates:
-    "candidates i \<equiv>
-      let excluded = heard i @ seen i in
-        {0 .. 1 + length excluded} - set excluded"
+  defines excluded:
+    "excluded i \<equiv> heard i @ seen i"
+  defines candidates:
+    "candidates i \<equiv> {0 .. 1 + length (excluded i)} - set (excluded i)"
+  assumes spoken:
+    "\<And>i. i < length assigned \<Longrightarrow> spoken ! i \<in> candidates i"
 
 text \<open>
 
@@ -254,30 +257,20 @@ To formalise this, we'll first assume that the rearmost cat chooses one of its
 
 \<close>
 
-locale cat_0 = candidates + cat_k +
-  fixes rejected :: "nat"
-  assumes spoken_0: "spoken ! 0 \<in> candidates 0"
-  assumes rejected: "rejected = (if spoken ! 0 = spare then assigned ! 0 else spare)"
+locale cat_0 = candidates + cat_k
 
-text \<open>
-
-We can prove that the rearmost cat calculates appropriate @{term candidates}:
-
-\<close>
-
-lemma (in cat_k) exists: "0 < length assigned"
+lemma (in cat_k) exists_0: "0 < length assigned"
   using k_min k_max by auto
 
 lemmas (in cat_k) assigned_0
-  = Cons_nth_drop_Suc[OF exists, simplified]
+  = Cons_nth_drop_Suc[OF exists_0, simplified]
 
 lemma (in cat_0) candidates_0: "candidates 0 = {spare, assigned ! 0}"
   proof -
-    let ?excluded = "heard 0 @ seen 0"
-    have len: "1 + length ?excluded = length assigned"
-      unfolding heard seen using exists by simp
-    have set: "set ?excluded = {0..length assigned} - {spare, assigned ! 0}"
-      unfolding heard seen
+    have len: "1 + length (excluded 0) = length assigned"
+      unfolding excluded heard seen using exists_0 by simp
+    have set: "set (excluded 0) = {0..length assigned} - {spare, assigned ! 0}"
+      unfolding excluded heard seen
       using assign assigned_0 distinct
             Diff_insert2 Diff_insert_absorb distinct.simps(2)
             list.simps(15) self_append_conv2 take_0
@@ -287,23 +280,88 @@ lemma (in cat_0) candidates_0: "candidates 0 = {spare, assigned ! 0}"
       unfolding len set
       unfolding Diff_Diff_Int subset_absorb_r
       unfolding assign[symmetric]
-      using exists by auto
+      using exists_0
+      by auto
   qed
+
+lemma (in cat_0) spoken_0: "spoken ! 0 \<in> {spare, assigned ! 0}"
+  using candidates_0 spoken[OF exists_0] by simp
+
+locale rejected = cat_0 +
+  fixes rejected :: "nat"
+  defines rejected: "rejected \<equiv> if spoken ! 0 = spare then assigned ! 0 else spare"
+  assumes rejected_k: "spoken ! k \<noteq> rejected"
+
+text \<open>
+
+We can prove that the rearmost cat calculates appropriate @{term candidates}:
+
+\<close>
 
 text \<open>
 
 If we additionally assume that cat $k$ calculates the expected @{term
-candidates}, and rejects the same hat as the rearmost cat, then we can prve
+candidates}, and rejects the same hat as the rearmost cat, then we can prove
 that cat $k$ chooses its assigned hat:
 
 \<close>
 
-locale spoken_k = cat_0 +
-  assumes spoken_k: "spoken ! k \<in> {rejected, assigned ! k}"
-  assumes rejected_k: "spoken ! k \<noteq> rejected"
+locale view_k = rejected +
+  fixes view_n view_0 view_k :: "nat list"
+  defines view_n: "view_n \<equiv> spare # assigned ! 0 # seen 0"
+  defines view_0: "view_0 \<equiv> rejected # spoken ! 0 # seen 0"
+  defines view_k: "view_k \<equiv> rejected # heard k @ assigned ! k # seen k"
 
-lemma (in spoken_k) spoken_correct: "spoken ! k = assigned ! k"
-  using spoken_k rejected_k by simp
+lemma (in view_k) view_eq: "view_k = view_0"
+  unfolding view_0 view_k heard_k seen
+  apply (simp add: k_max Cons_nth_drop_Suc)
+  apply (subst drop_map_nth[OF less_imp_le_nat, OF k_max])
+  apply (subst drop_map_nth[OF Suc_leI[OF exists_0]])
+  apply (subst map_append[symmetric])
+  apply (rule arg_cong[where f="map _"])
+  apply (rule range_app)
+  using k_max k_min less_imp_le Suc_le_eq by auto
+
+lemma (in view_k) distinct_set_n:
+  "distinct view_n \<and> set view_n = {0..length assigned}"
+  unfolding view_n seen
+  unfolding assigned_0
+  using distinct assign
+  by simp
+
+lemma (in view_k) distinct_set_0:
+  "distinct view_0 \<and> set view_0 = {0..length assigned}"
+  using spoken_0 distinct_set_n
+  unfolding view_n view_0 rejected
+  by (cases "spoken ! 0 = spare") auto
+
+lemma (in view_k)
+  distinct_k: "distinct view_k" and
+  set_k: "set view_k = {0..length assigned}"
+  using distinct_set_0 view_eq
+  by auto
+
+lemma (in view_k) candidates_k: "candidates k = {rejected, assigned ! k}"
+  proof -
+    have len: "1 + length (excluded k) = length assigned"
+      using excluded[of k] k_min k_max heard_k seen[of k] by simp
+    have set: "set (excluded k) = {0..length assigned} - {rejected, assigned ! k}"
+      apply (rule subset_minusI)
+      unfolding excluded[of k]
+      using view_k distinct_k set_k
+      by auto
+    show ?thesis
+      unfolding candidates
+      unfolding len set
+      unfolding Diff_Diff_Int subset_absorb_r
+      unfolding assign[symmetric]
+      unfolding rejected
+      using k_max exists_0
+      by auto
+  qed
+
+lemma (in view_k) spoken_correct: "spoken ! k = assigned ! k"
+  using spoken[OF k_max] candidates_k rejected_k by simp
 
 text \<open>
 
