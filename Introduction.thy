@@ -135,17 +135,14 @@ We'll use a locale to describe the information flow:
 
 \<close>
 
-locale spoken = assigned +
+locale called = assigned +
   -- "calls made by cats, in order from back to front"
-  fixes spoken :: "nat list"
-  -- "calls @{text heard} and hats @{text seen} by each cat"
-  fixes heard seen :: "nat \<Rightarrow> nat list"
-  -- "cat $k$ has @{text heard} what was called by $k$ cats to the rear"
-  defines heard: "heard k \<equiv> take k spoken"
-  -- "cat $k$ has @{text seen} the hats to the front"
-  defines seen: "seen k \<equiv> drop (Suc k) assigned"
+  fixes called :: "nat list"
   -- "each cat speaks exactly once"
-  assumes length: "length spoken = length assigned"
+  assumes length: "length called = length assigned"
+
+definition (in called) "heard k \<equiv> take k called"
+definition (in called) "seen k \<equiv> drop (Suc k) assigned"
 
 subsection \<open>The rearmost cat is special\<close>
 
@@ -178,37 +175,32 @@ using what we've already shown about cats $\setc{i}{0 \leq i < k}$ when we're
 proving that cat $k$ makes the right choice. Mathematical induction merely says
 that if all steps are alike, we can take an arbitrary number of them all at
 once, by considering an arbitrary cat $k$, and assuming we've already
-considered all the cats $\setc{i}{0 \leq i < k}$ behind it:
+considered all the cats $\setc{i}{0 \leq i < k}$ behind it. We'll use a locale
+to package the induction hypothesis:
 
 \<close>
 
-lemma (in spoken) assigned_induct:
-  assumes "\<And>k. k \<in> {1 ..< length assigned}
-                 \<Longrightarrow> \<forall>i \<in> {1 ..< k}. spoken ! i = assigned ! i
-                 \<Longrightarrow> spoken ! k = assigned ! k"
-  shows "k \<in> {1 ..< length assigned} \<Longrightarrow> spoken ! k = assigned ! k"
-  by (induct k rule: nat_less_induct)
-     (meson assms atLeastLessThan_iff less_imp_le less_le_trans)
-
-text \<open>
-
-We'll use a locale to reason in the context of this induction hypothesis:
-
-\<close>
-
-locale cat_k = spoken +
+locale cat_k = called +
   fixes k :: "nat"
   assumes k_min: "0 < k"
   assumes k_max: "k < length assigned"
-  assumes IH: "\<forall>i \<in> {1 ..< k}. spoken ! i = assigned ! i"
+  assumes IH: "\<forall>i \<in> {1 ..< k}. called ! i = assigned ! i"
 
-lemma (in cat_k) k_max_spoken: "k < length spoken"
+lemma (in called) called_induct:
+  assumes "\<And>k. cat_k spare assigned called k \<Longrightarrow> called ! k = assigned ! k"
+  shows "k \<in> {1 ..< length assigned} \<Longrightarrow> called ! k = assigned ! k"
+  apply (induct k rule: nat_less_induct)
+  apply (rule assms)
+  apply (unfold_locales)
+  by auto
+
+lemma (in cat_k) k_max_called: "k < length called"
   using k_max length by simp
 
 lemma (in cat_k) heard_k:
-  "heard k = spoken ! 0 # map (op ! assigned) [Suc 0 ..< k]"
-  using heard[of k] IH
-        take_map_nth[OF less_imp_le, OF k_max_spoken]
+  "heard k = called ! 0 # map (op ! assigned) [Suc 0 ..< k]"
+  using heard_def[of k] IH
+        take_map_nth[OF less_imp_le, OF k_max_called]
         range_extract_head[OF k_min]
   by auto
 
@@ -231,15 +223,11 @@ after excluding all the numbers it has seen and heard:
 
 \<close>
 
-locale candidates = spoken +
-  fixes excluded :: "nat \<Rightarrow> nat list"
-  fixes candidates :: "nat \<Rightarrow> nat set"
-  defines excluded:
-    "excluded i \<equiv> heard i @ seen i"
-  defines candidates:
-    "candidates i \<equiv> {0 .. 1 + length (excluded i)} - set (excluded i)"
-  assumes spoken:
-    "\<And>i. i < length assigned \<Longrightarrow> spoken ! i \<in> candidates i"
+definition (in called) "excluded k \<equiv> heard k @ seen k"
+definition (in called) "candidates k \<equiv> {0 .. 1 + length (excluded k)} - set (excluded k)"
+
+locale called_candidate = called +
+  assumes called_candidate: "\<And>i. i < length assigned \<Longrightarrow> called ! i \<in> candidates i"
 
 text \<open>
 
@@ -257,7 +245,7 @@ To formalise this, we'll first assume that the rearmost cat chooses one of its
 
 \<close>
 
-locale cat_0 = candidates + cat_k
+locale cat_0 = called_candidate + cat_k
 
 lemma (in cat_k) exists_0: "0 < length assigned"
   using k_min k_max by auto
@@ -268,15 +256,15 @@ lemmas (in cat_k) assigned_0
 lemma (in cat_0) candidates_0: "candidates 0 = {spare, assigned ! 0}"
   proof -
     have len: "1 + length (excluded 0) = length assigned"
-      unfolding excluded heard seen using exists_0 by simp
+      unfolding excluded_def heard_def seen_def using exists_0 by simp
     have set: "set (excluded 0) = {0..length assigned} - {spare, assigned ! 0}"
-      unfolding excluded heard seen
+      unfolding excluded_def heard_def seen_def
       using assign assigned_0 distinct
             Diff_insert2 Diff_insert_absorb distinct.simps(2)
             list.simps(15) self_append_conv2 take_0
       by metis
     show ?thesis
-      unfolding candidates Let_def
+      unfolding candidates_def
       unfolding len set
       unfolding Diff_Diff_Int subset_absorb_r
       unfolding assign[symmetric]
@@ -284,19 +272,14 @@ lemma (in cat_0) candidates_0: "candidates 0 = {spare, assigned ! 0}"
       by auto
   qed
 
-lemma (in cat_0) spoken_0: "spoken ! 0 \<in> {spare, assigned ! 0}"
-  using candidates_0 spoken[OF exists_0] by simp
+lemma (in cat_0) called_0: "called ! 0 \<in> {spare, assigned ! 0}"
+  using candidates_0 called_candidate[OF exists_0] by simp
 
-locale rejected = cat_0 +
-  fixes rejected :: "nat"
-  defines rejected: "rejected \<equiv> if spoken ! 0 = spare then assigned ! 0 else spare"
-  assumes rejected_k: "spoken ! k \<noteq> rejected"
+definition (in cat_0)
+  "rejected \<equiv> if called ! 0 = spare then assigned ! 0 else spare"
 
-text \<open>
-
-We can prove that the rearmost cat calculates appropriate @{term candidates}:
-
-\<close>
+locale rejected_k = cat_0 +
+  assumes rejected_k: "called ! k \<noteq> rejected"
 
 text \<open>
 
@@ -306,14 +289,12 @@ that cat $k$ chooses its assigned hat:
 
 \<close>
 
-locale view_k = rejected +
-  fixes view_n view_0 view_k :: "nat list"
-  defines view_n: "view_n \<equiv> spare # assigned ! 0 # seen 0"
-  defines view_0: "view_0 \<equiv> rejected # spoken ! 0 # seen 0"
-  defines view_k: "view_k \<equiv> rejected # heard k @ assigned ! k # seen k"
+definition (in cat_0) "view_n \<equiv> spare # assigned ! 0 # seen 0"
+definition (in cat_0) "view_0 \<equiv> rejected # called ! 0 # seen 0"
+definition (in cat_0) "view_k \<equiv> rejected # heard k @ assigned ! k # seen k"
 
-lemma (in view_k) view_eq: "view_k = view_0"
-  unfolding view_0 view_k heard_k seen
+lemma (in cat_0) view_eq: "view_k = view_0"
+  unfolding view_0_def view_k_def heard_k seen_def
   apply (simp add: k_max Cons_nth_drop_Suc)
   apply (subst drop_map_nth[OF less_imp_le_nat, OF k_max])
   apply (subst drop_map_nth[OF Suc_leI[OF exists_0]])
@@ -322,46 +303,51 @@ lemma (in view_k) view_eq: "view_k = view_0"
   apply (rule range_app)
   using k_max k_min less_imp_le Suc_le_eq by auto
 
-lemma (in view_k) distinct_set_n:
+lemma (in cat_0) distinct_set_n:
   "distinct view_n \<and> set view_n = {0..length assigned}"
-  unfolding view_n seen
+  unfolding view_n_def seen_def
   unfolding assigned_0
   using distinct assign
   by simp
 
-lemma (in view_k) distinct_set_0:
+lemma (in cat_0) distinct_set_0:
   "distinct view_0 \<and> set view_0 = {0..length assigned}"
-  using spoken_0 distinct_set_n
-  unfolding view_n view_0 rejected
-  by (cases "spoken ! 0 = spare") auto
+  using called_0 distinct_set_n
+  unfolding view_n_def view_0_def rejected_def
+  by (cases "called ! 0 = spare") auto
 
-lemma (in view_k)
+lemma (in cat_0)
   distinct_k: "distinct view_k" and
   set_k: "set view_k = {0..length assigned}"
   using distinct_set_0 view_eq
   by auto
 
-lemma (in view_k) candidates_k: "candidates k = {rejected, assigned ! k}"
+lemma (in cat_0) candidates_k: "candidates k = {rejected, assigned ! k}"
   proof -
     have len: "1 + length (excluded k) = length assigned"
-      using excluded[of k] k_min k_max heard_k seen[of k] by simp
+      using excluded_def[of k] k_min k_max heard_k seen_def[of k] by simp
     have set: "set (excluded k) = {0..length assigned} - {rejected, assigned ! k}"
       apply (rule subset_minusI)
-      unfolding excluded[of k]
-      using view_k distinct_k set_k
+      unfolding excluded_def[of k]
+      using view_k_def distinct_k set_k
       by auto
     show ?thesis
-      unfolding candidates
+      unfolding candidates_def
       unfolding len set
       unfolding Diff_Diff_Int subset_absorb_r
       unfolding assign[symmetric]
-      unfolding rejected
+      unfolding rejected_def
       using k_max exists_0
       by auto
   qed
 
-lemma (in view_k) spoken_correct: "spoken ! k = assigned ! k"
-  using spoken[OF k_max] candidates_k rejected_k by simp
+lemma (in rejected_k) called_correct: "called ! k = assigned ! k"
+  using called_candidate[OF k_max] candidates_k rejected_k by simp
+
+lemma (in called) rejected_induct:
+  assumes "\<And>k. cat_k spare assigned called k \<Longrightarrow> rejected_k spare assigned called k"
+  shows "k \<in> {1 ..< length assigned} \<Longrightarrow> called ! k = assigned ! k"
+  using called_induct rejected_k.called_correct[OF assms] by simp
 
 text \<open>
 
@@ -408,10 +394,10 @@ function, which we'll take as a parameter until we know how to implement it:
 
 type_synonym classifier = "nat \<Rightarrow> nat list \<Rightarrow> nat \<Rightarrow> nat list \<Rightarrow> bool"
 
-locale classifier = candidates +
+locale classifier = called_candidate +
   fixes classify :: "classifier"
   assumes choice:
-    "\<And>k. spoken ! k \<equiv>
+    "\<And>k. called ! k \<equiv>
             case sorted_list_of_set (candidates k) of
               [a,b] \<Rightarrow> if (classify a (heard k) b (seen k)) then b else a"
 
