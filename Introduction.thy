@@ -70,6 +70,12 @@ lemma (in hats) distinct: "distinct (spare # assigned)"
   apply (subst assign)
   by auto
 
+lemma (in hats) distinct_pointwise:
+  assumes "i < length assigned"
+  shows "spare \<noteq> assigned ! i
+           \<and> (\<forall> j < length assigned. i \<noteq> j \<longrightarrow> assigned ! i \<noteq> assigned ! j)"
+  using assms distinct by (auto simp: nth_eq_iff_index_eq)
+
 text \<open>
 
 The proof developed this way turns out to be more convoluted than it needs to
@@ -217,7 +223,7 @@ who is in front of $k$. Hat numbers are unique, so $k$'s number must be
 different from $t$'s, and therefore $k$'s choice is wrong. But $t$ may not
 repeat the number that $k$ said, so $t$ is also wrong.
 
-Each cat $k$ has to choose between exactly two candidate hats: those left over
+Each cat $k$ therefore has to choose between exactly two candidate hats: those left over
 after excluding all the numbers it has seen and heard:
 
 \<close>
@@ -242,14 +248,10 @@ the rearmost cat chose \emph{not} to call.
 To solve the puzzle, we therefore just need to ensure that every cat $k$
 rejects the same number that the rearmost cat rejected.
 
-To formalise this, we'll first assume that the rearmost cat chooses one of its
-@{text candidates}, and define @{text rejected} as the other:
+To formalise this, we'll first prove that the @{text candidates} for the rearmost
+cat are as we expect:
 
 \<close>
-
-locale cat_0 = cat_k +
-  assumes spoken_candidate_0: "spoken ! 0 \<in> candidates 0"
-  assumes spoken_candidate_k: "spoken ! k \<in> candidates k"
 
 lemma (in cat_k) exists_0: "0 < length assigned"
   using k_min k_max by auto
@@ -277,65 +279,41 @@ lemma (in cat_k) candidates_0: "candidates 0 = {spare, assigned ! 0}"
       by auto
   qed
 
-lemma (in cat_0) spoken_0: "spoken ! 0 \<in> {spare, assigned ! 0}"
-  using candidates_0 spoken_candidate_0 by simp
+text \<open>
+
+We define the @{text rejected} has as whichever of those the rearmost cat does
+not choose:
+
+\<close>
 
 definition (in cat_k)
   "rejected \<equiv> if spoken ! 0 = spare then assigned ! 0 else spare"
 
-locale rejected_k = cat_0 +
-  assumes rejected_k: "spoken ! k \<noteq> rejected"
-
 text \<open>
 
-If we additionally assume that cat $k$ calculates the expected @{term
-candidates}, and rejects the same hat as the rearmost cat, then we can prove
-that cat $k$ chooses its assigned hat:
+We can try to prove a similar theorem for cat $k$, but we discover that we need
+some additional assumptions that the expected @{text candidates}, together with
+what cat $k$ has @{text heard} and @{text seen}, constitute the complete set of
+hats.
+
+We express these assumptions with an abbreviation @{text view_k}. We'll discharge
+the assumptions by proving that this is an ordering of the complete set of hats.
 
 \<close>
 
-definition (in cat_k) "view_n \<equiv> spare # assigned ! 0 # seen 0"
-definition (in cat_k) "view_0 \<equiv> rejected # spoken ! 0 # seen 0"
-definition (in cat_k) "view_k \<equiv> rejected # heard k @ assigned ! k # seen k"
+abbreviation (in cat_k) (input)
+  "view_k \<equiv> rejected # heard k @ assigned ! k # seen k"
 
-lemma (in cat_k) view_eq: "view_k = view_0"
-  unfolding view_0_def view_k_def heard_k seen_def
-  apply (simp add: k_max Cons_nth_drop_Suc)
-  apply (subst drop_map_nth[OF less_imp_le_nat, OF k_max])
-  apply (subst drop_map_nth[OF Suc_leI[OF exists_0]])
-  apply (subst map_append[symmetric])
-  apply (rule arg_cong[where f="map _"])
-  apply (rule range_app)
-  using k_max k_min less_imp_le Suc_le_eq by auto
-
-lemma (in cat_k) distinct_set_n:
-  "distinct view_n \<and> set view_n = {0..length assigned}"
-  unfolding view_n_def seen_def
-  unfolding assigned_0
-  using distinct assign
-  by simp
-
-lemma (in cat_0) distinct_set_0:
-  "distinct view_0 \<and> set view_0 = {0..length assigned}"
-  using spoken_0 distinct_set_n
-  unfolding view_n_def view_0_def rejected_def
-  by (cases "spoken ! 0 = spare") auto
-
-lemma (in cat_0)
-  distinct_k: "distinct view_k" and
-  set_k: "set view_k = {0..length assigned}"
-  using distinct_set_0 view_eq
-  by auto
-
-lemma (in cat_0) candidates_k: "candidates k = {rejected, assigned ! k}"
+lemma (in cat_k) candidates_k:
+  assumes "distinct view_k" "set view_k = {0..length assigned}"
+  shows "candidates k = {rejected, assigned ! k}"
   proof -
     let ?excluded = "heard k @ seen k"
     have len: "1 + length ?excluded = length assigned"
       using k_min k_max heard_k seen_def[of k] by simp
     have set: "set ?excluded = {0..length assigned} - {rejected, assigned ! k}"
       apply (rule subset_minusI)
-      using view_k_def distinct_k set_k
-      by auto
+      using assms by auto
     show ?thesis
       unfolding candidates_def candidates_excluding_def Let_def
       unfolding len set
@@ -346,8 +324,96 @@ lemma (in cat_0) candidates_k: "candidates k = {rejected, assigned ! k}"
       by auto
   qed
 
+text \<open>
+
+We'll prove the assumptions by appealing to two other orderings of the complete
+set of hats. We'll use @{text view_0} as a step towards @{text view_n}. The latter
+is very close to the ordering used in the original specification of @{text hats},
+so we can easily prove the relevant properties of @{text view_n}
+
+\<close>
+
+abbreviation (in cat_k) (input) "view_n \<equiv> spare # assigned ! 0 # seen 0"
+abbreviation (in cat_k) (input) "view_0 \<equiv> rejected # spoken ! 0 # seen 0"
+
+lemma (in cat_k) view_n: "view_n = spare # assigned"
+  unfolding seen_def assigned_0 by simp
+
+lemma (in cat_k)
+  distinct_n: "distinct view_n" and
+  set_n: "set view_n = {0..length assigned}"
+  using distinct assign
+  unfolding seen_def assigned_0
+  by auto
+
+text \<open>
+
+Ordering @{text view_0} is the same as @{text view_k}, but seen from the rearmost
+cat's perspective. We prove they are equal:
+
+\<close>
+
+lemmas (in cat_k) drop_maps =
+  drop_map_nth[OF less_imp_le_nat, OF k_max]
+  drop_map_nth[OF Suc_leI[OF exists_0]]
+
+lemma (in cat_k) view_eq: "view_k = view_0"
+  unfolding heard_k seen_def
+  apply (simp add: k_max Cons_nth_drop_Suc drop_maps)
+  apply (subst map_append[symmetric])
+  apply (rule arg_cong[where f="map _"])
+  apply (rule range_app)
+  using k_max k_min less_imp_le Suc_le_eq by auto
+
+text \<open>
+
+Now, to prove the relevant properties about @{text view_k}, we just need to
+prove them for @{text view_0}. But to do that, we need to know something
+about @{term "spoken ! 0"}. We haven't yet figured out how that choice is
+made, so we'll just assume it's one of the @{text candidates}:
+
+\<close>
+
+locale cat_0 = cat_k +
+  assumes spoken_candidate_0: "spoken ! 0 \<in> candidates 0"
+
+lemma (in cat_0)
+  distinct_0: "distinct view_0" and
+  set_0: "set view_0 = {0..length assigned}"
+  using spoken_candidate_0 distinct_n set_n
+  unfolding candidates_0 rejected_def
+  by fastforce+
+
+text \<open>
+
+Finally, we can prove the properties we wanted for @{text view_k}, and use
+them to discharge the assumptions of @{text candidates_k}.
+
+\<close>
+
+lemma (in cat_0)
+  distinct_k: "distinct view_k" and
+  set_k: "set view_k = {0..length assigned}"
+  using distinct_0 set_0 view_eq
+  by auto
+
+lemmas (in cat_0) candidates_k = candidates_k[OF distinct_k set_k]
+
+text \<open>
+
+If we additionally assume that cat $k$ chooses one of it's @{text candidates},
+but somehow avoids the @{text rejected} hat, then we can trivially prove that
+cat $k$ indeed chooses the correct hat.
+
+We can also use this to strengthen our induction argument.
+
+\<close>
+
+locale rejected_k = cat_0 +
+  assumes spoken_candidate_k: "spoken ! k \<in> candidates k - {rejected}"
+
 lemma (in rejected_k) spoken_correct: "spoken ! k = assigned ! k"
-  using spoken_candidate_k candidates_k rejected_k by simp
+  using spoken_candidate_k candidates_k by simp
 
 lemma (in cats) rejected_induct:
   assumes "\<And>k. cat_k spare assigned spoken k \<Longrightarrow> rejected_k spare assigned spoken k"
@@ -542,15 +608,41 @@ locale cat_k_parity
   + cat_k spare assigned "choices assigned" k
   for spare assigned parity k
 
+context cat_k_parity begin
+
+lemmas candidates_0 = candidates_0[unfolded candidates_def heard_def take_0]
+
+lemmas choices_0 = choices[OF exists_0 refl, simplified, folded seen_def]
+lemmas choices_k = choices[OF k_max refl, folded heard_def seen_def]
+
+lemmas parity_swap_0 = parity_correct[of _ "[]", unfolded append_Nil, OF distinct_n]
+
+end
+
+lemma (in cat_k_parity)
+  parity_0: "parity view_0" and
+  parity_n: "parity view_n \<longleftrightarrow> view_n = view_0"
+  using distinct_n parity_swap_0
+  unfolding choices_0 choice_def candidates_0 rejected_def
+  by auto
+
 lemma (in cat_k_parity) choice_0:
-  shows "choices assigned ! 0 \<in> candidates 0"
-  unfolding choices[OF exists_0 refl] choice_def
-            candidates_0[unfolded candidates_def heard_def seen_def]
-  using parity_correct[where heard="[]"] assigned_0
-  sorry
+  "choices assigned ! 0 = (if parity view_n then assigned ! 0 else spare)"
+  using distinct_n parity_swap_0
+  unfolding choices_0 choice_def candidates_0
+  by (subst sorted_list_of_set_distinct_pair) auto
+
+lemma (in cat_k_parity) rejected_parity:
+  "rejected = (if parity view_n then spare else assigned ! 0)"
+  unfolding rejected_def choice_0 by simp
+
+lemma (in cat_k_parity) parity_k: "parity view_k"
+  using parity_0 view_eq by simp
 
 lemma (in cat_k_parity) choice_k:
   shows "choices assigned ! k \<in> candidates k"
+  unfolding choices[OF k_max refl] candidates_def
+  
   sorry
 
 lemma (in cat_k_parity) choice_rejected_k:
