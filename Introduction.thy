@@ -269,13 +269,18 @@ cat are as we expect:
 
 \<close>
 
-lemma (in cat_k) exists_0: "0 < length assigned"
-  using k_min k_max by auto
+locale cat_0 = cats +
+  assumes exists_0: "0 < length assigned"
 
-lemma (in cat_k) assigned_0: "assigned ! 0 # drop (Suc 0) assigned = assigned"
+sublocale cat_k < cat_0
+  apply unfold_locales
+  using k_min k_max
+  by auto
+
+lemma (in cat_0) assigned_0: "assigned ! 0 # drop (Suc 0) assigned = assigned"
   using Cons_nth_drop_Suc[OF exists_0] by simp
 
-lemma (in cat_k) candidates_0: "candidates 0 = {spare, assigned ! 0}"
+lemma (in cat_0) candidates_0: "candidates 0 = {spare, assigned ! 0}"
   apply (rule candidates_i[OF exists_0])
   using distinct assign unfolding heard_def seen_def assigned_0
   by auto
@@ -287,7 +292,7 @@ not choose:
 
 \<close>
 
-definition (in cat_k)
+definition (in cat_0)
   "rejected \<equiv> if spoken ! 0 = spare then assigned ! 0 else spare"
 
 text \<open>
@@ -311,11 +316,11 @@ so we can easily prove the relevant properties of @{text view_n}
 
 \<close>
 
+abbreviation (in cat_0) (input) "view_n \<equiv> spare # assigned ! 0 # seen 0"
+abbreviation (in cat_0) (input) "view_0 \<equiv> rejected # spoken ! 0 # seen 0"
 abbreviation (in cat_k) (input) "view_k \<equiv> rejected # heard k @ assigned ! k # seen k"
-abbreviation (in cat_k) (input) "view_n \<equiv> spare # assigned ! 0 # seen 0"
-abbreviation (in cat_k) (input) "view_0 \<equiv> rejected # spoken ! 0 # seen 0"
 
-lemma (in cat_k)
+lemma (in cat_0)
   distinct_n: "distinct view_n" and
   set_n: "set view_n = {0..length assigned}"
   using distinct assign
@@ -350,10 +355,10 @@ made, so we'll just assume it's one of the @{text candidates}:
 
 \<close>
 
-locale cat_0 = cat_k +
+locale cat_0_spoken = cat_0 +
   assumes spoken_candidate_0: "spoken ! 0 \<in> candidates 0"
 
-lemma (in cat_0)
+lemma (in cat_0_spoken)
   distinct_0: "distinct view_0" and
   set_0: "set view_0 = {0..length assigned}"
   using spoken_candidate_0 distinct_n set_n
@@ -367,13 +372,15 @@ them to discharge the assumptions of @{text candidates_k}.
 
 \<close>
 
-lemma (in cat_0)
+locale cat_k_view = cat_k + cat_0_spoken
+
+lemma (in cat_k_view)
   distinct_k: "distinct view_k" and
   set_k: "set view_k = {0..length assigned}"
   using distinct_0 set_0 view_eq
   by auto
 
-lemma (in cat_0) candidates_k: "candidates k = {rejected, assigned ! k}"
+lemma (in cat_k_view) candidates_k: "candidates k = {rejected, assigned ! k}"
   using candidates_i[OF k_max] distinct_k set_k by simp
 
 text \<open>
@@ -453,8 +460,7 @@ lemma (in classifier) choices':
 
 lemma (in classifier) choices:
   assumes "i < length assigned"
-  assumes "spoken = choices assigned"
-  shows "spoken ! i = choice (take i spoken) (drop (Suc i) assigned)"
+  shows "choices assigned ! i = choice (take i (choices assigned)) (drop (Suc i) assigned)"
   using assms choices' by (simp add: choices_def)
 
 lemma (in classifier) choices'_length: "length (choices' heard assigned) = length assigned"
@@ -481,8 +487,8 @@ classifier accepts an ordering if and only if it would reject the alternative:
 
 \<close>
 
-locale classifier_correct = classifier +
-  assumes classifier_correct:
+locale classifier_swap = classifier +
+  assumes classifier_swap:
     "\<And>a heard b seen.
       distinct (a # heard @ b # seen) \<Longrightarrow>
         classify a heard b seen \<longleftrightarrow> \<not> classify b heard a seen"
@@ -514,8 +520,8 @@ consistent:
 
 \<close>
 
-locale classifier_well_behaved = classifier_correct +
-  assumes classifier_well_behaved:
+locale classifier_consistent = classifier_swap +
+  assumes classifier_consistent:
     "\<And>a heard b seen a' heard' b' seen'.
       a # heard @ b # seen = a' # heard' @ b' # seen'
         \<Longrightarrow> classify a heard b seen = classify a' heard' b' seen'"
@@ -536,16 +542,16 @@ single list.
 
 type_synonym parity = "nat list \<Rightarrow> bool"
 
-locale parity =
+locale parity_classifier =
   fixes parity :: "parity"
-  assumes parity_correct:
+  assumes parity_swap_0_i:
     "\<And>a heard b seen.
       distinct (a # heard @ b # seen) \<Longrightarrow>
         parity (a # heard @ b # seen) \<longleftrightarrow> \<not> parity (b # heard @ a # seen)"
 
-sublocale parity < classifier_well_behaved "\<lambda>a heard b seen. parity (a # heard @ b # seen)"
+sublocale parity_classifier < classifier_consistent "\<lambda>a heard b seen. parity (a # heard @ b # seen)"
   apply (unfold_locales)
-  apply (erule parity_correct)
+  apply (erule parity_swap_0_i)
   by auto
 
 text \<open>
@@ -557,28 +563,31 @@ function.
 
 \<close>
 
-locale hats_parity = hats + parity
+locale hats_parity = hats + parity_classifier
 
 sublocale hats_parity < cats spare assigned "choices assigned"
-  apply unfold_locales
-  by (rule choices_length)
+  using choices_length by unfold_locales
 
-locale cat_k_parity = hats_parity spare assigned parity
+locale cat_0_parity = hats_parity spare assigned parity
+  + cat_0 spare assigned "choices assigned"
+  for spare assigned parity
+
+locale cat_k_parity = cat_0_parity spare assigned parity
   + cat_k spare assigned "choices assigned" k
   for spare assigned parity k
 
-lemma (in cat_k_parity) candidates_excluding_0:
+lemma (in cat_0_parity) candidates_excluding_0:
   "candidates_excluding [] (seen 0) = {spare, assigned ! 0}"
   using candidates_0 unfolding candidates_def heard_def take_0 by simp
 
-lemma (in cat_k_parity) choices_0: "choices assigned ! 0 = choice [] (seen 0)"
+lemma (in cat_0_parity) choices_0: "choices assigned ! 0 = choice [] (seen 0)"
   using choices[OF exists_0] unfolding seen_def by simp
 
-lemma (in cat_k_parity) parity_swap_0:
+lemma (in cat_0_parity) parity_swap_0:
   "parity (spare # assigned ! 0 # seen 0) \<longleftrightarrow> \<not> parity (assigned ! 0 # spare # seen 0)"
-  using parity_correct[of spare "[]"] distinct_n by simp
+  using parity_swap_0_i[of spare "[]"] distinct_n by simp
 
-lemma (in cat_k_parity) parity_0: "parity view_0"
+lemma (in cat_0_parity) parity_0: "parity view_0"
   using distinct_n parity_swap_0
   unfolding choices_0 choice_def candidates_excluding_0 rejected_def
   by auto
@@ -586,13 +595,13 @@ lemma (in cat_k_parity) parity_0: "parity view_0"
 lemma (in cat_k_parity) parity_k: "parity view_k"
   using parity_0 view_eq by simp
 
-lemma (in cat_k_parity) choice_0:
+lemma (in cat_0_parity) choice_0:
   "choices assigned ! 0 = (if parity view_n then assigned ! 0 else spare)"
   using distinct_n parity_swap_0
   unfolding choices_0 choice_def candidates_excluding_0
   by (subst sorted_list_of_set_distinct_pair) auto
 
-sublocale cat_k_parity < cat_0 spare assigned "choices assigned" k
+sublocale cat_k_parity < cat_k_view spare assigned "choices assigned" k
   apply unfold_locales
   unfolding choice_0 candidates_0
   by simp
@@ -606,18 +615,40 @@ lemma (in cat_k_parity) candidates_excluding_k:
   using candidates_k unfolding candidates_def by simp
 
 lemma (in cat_k_parity) choice_k: "choices assigned ! k = assigned ! k"
-  using parity_correct[OF distinct_k] distinct_k parity_k
+  using parity_swap_0_i[OF distinct_k] distinct_k parity_k
   unfolding choices_k choice_def candidates_excluding_k
   by (subst sorted_list_of_set_distinct_pair) auto
 
 lemma (in hats_parity) cat_k_cat_k_parity:
   assumes "cat_k spare assigned (choices assigned) k"
   shows "cat_k_parity spare assigned parity k"
-  by (simp add: assms cat_k_parity_def hats_parity_axioms)
+  proof -
+    interpret cat_k spare assigned "choices assigned" k using assms by simp
+    show ?thesis by unfold_locales
+  qed
 
-lemma (in hats_parity) parity_choices_correct:
+lemma (in hats_parity) choices_correct:
   "k \<in> {1..<length assigned} \<Longrightarrow> choices assigned ! k = assigned ! k"
   by (rule cat_k_induct[OF cat_k_parity.choice_k, OF cat_k_cat_k_parity])
+
+lemma (in cats) distinct_pointwise:
+  assumes "i < length assigned"
+  shows "spare \<noteq> assigned ! i
+           \<and> (\<forall> j < length assigned. i \<noteq> j \<longrightarrow> assigned ! i \<noteq> assigned ! j)"
+  using assms distinct by (auto simp: nth_eq_iff_index_eq)
+
+lemma (in hats_parity) choices_distinct: "distinct (choices assigned)"
+  proof (cases "0 < length assigned")
+    case True
+    interpret cat_0_parity spare assigned parity using True by unfold_locales
+    show ?thesis
+      apply (clarsimp simp: distinct_conv_nth_less choices_length)
+      apply (case_tac "i = 0")
+      using True choices_correct choice_0 distinct_pointwise
+      by (auto split: if_splits)
+  next
+    case False thus ?thesis using choices_length[of assigned] by simp
+  qed
 
 section \<open>The parity function\<close>
 
