@@ -191,7 +191,7 @@ locale cat_k = cats +
   assumes k_max: "k < length assigned"
   assumes IH: "\<forall>i \<in> {1 ..< k}. spoken ! i = assigned ! i"
 
-lemma (in cats) spoken_induct:
+lemma (in cats) cat_k_induct:
   assumes "\<And>k. cat_k spare assigned spoken k \<Longrightarrow> spoken ! k = assigned ! k"
   shows "k \<in> {1 ..< length assigned} \<Longrightarrow> spoken ! k = assigned ! k"
   apply (induct k rule: nat_less_induct)
@@ -397,30 +397,14 @@ lemma (in cat_0)
   using distinct_0 set_0 view_eq
   by auto
 
-lemmas (in cat_0) candidates_k = candidates_k[OF distinct_k set_k]
+lemma (in cat_0) candidates_k: "candidates k = {rejected, assigned ! k}"
+  using candidates_k distinct_k set_k by simp
 
 text \<open>
 
-If we additionally assume that cat $k$ chooses one of it's @{text candidates},
-but somehow avoids the @{text rejected} hat, then we can trivially prove that
-cat $k$ indeed chooses the correct hat.
-
-We can also use this to strengthen our induction argument.
-
-\<close>
-
-locale rejected_k = cat_0 +
-  assumes spoken_candidate_k: "spoken ! k \<in> candidates k - {rejected}"
-
-lemma (in rejected_k) spoken_correct: "spoken ! k = assigned ! k"
-  using spoken_candidate_k candidates_k by simp
-
-lemma (in cats) rejected_induct:
-  assumes "\<And>k. cat_k spare assigned spoken k \<Longrightarrow> rejected_k spare assigned spoken k"
-  shows "k \<in> {1 ..< length assigned} \<Longrightarrow> spoken ! k = assigned ! k"
-  using spoken_induct rejected_k.spoken_correct[OF assms] by simp
-
-text \<open>
+If we additionally assumed that cat $k$ chooses one of it's @{text candidates},
+but somehow avoids the @{text rejected} hat, it trivially follows that cat $k$
+chooses its @{text assigned} hat.
 
 This bears repeating, lest we miss its significance!
 
@@ -599,7 +583,7 @@ function.
 
 locale hats_parity = hats + parity
 
-sublocale hats_parity < hpc?: cats spare assigned "choices assigned"
+sublocale hats_parity < cats spare assigned "choices assigned"
   apply unfold_locales
   by (rule choices_length)
 
@@ -608,56 +592,45 @@ locale cat_k_parity
   + cat_k spare assigned "choices assigned" k
   for spare assigned parity k
 
-context cat_k_parity begin
+lemmas (in cat_k_parity)
+  candidates_excluding_0 = candidates_0[unfolded candidates_def heard_def take_0]
 
-lemmas candidates_0 = candidates_0[unfolded candidates_def heard_def take_0]
+lemmas (in cat_k_parity)
+  choices_0 = choices[OF exists_0 refl, simplified, folded seen_def]
 
-lemmas choices_0 = choices[OF exists_0 refl, simplified, folded seen_def]
-lemmas choices_k = choices[OF k_max refl, folded heard_def seen_def]
-
-lemmas parity_swap_0 = parity_correct[of _ "[]", unfolded append_Nil, OF distinct_n]
-
-end
+lemmas (in cat_k_parity)
+  parity_swap_0 = parity_correct[of _ "[]", unfolded append_Nil, OF distinct_n]
 
 lemma (in cat_k_parity)
-  parity_0: "parity view_0" and
-  parity_n: "parity view_n \<longleftrightarrow> view_n = view_0"
+  parity_0: "parity view_0"
   using distinct_n parity_swap_0
-  unfolding choices_0 choice_def candidates_0 rejected_def
+  unfolding choices_0 choice_def candidates_excluding_0 rejected_def
   by auto
 
 lemma (in cat_k_parity) choice_0:
   "choices assigned ! 0 = (if parity view_n then assigned ! 0 else spare)"
   using distinct_n parity_swap_0
-  unfolding choices_0 choice_def candidates_0
+  unfolding choices_0 choice_def candidates_excluding_0
   by (subst sorted_list_of_set_distinct_pair) auto
 
-lemma (in cat_k_parity) rejected_parity:
-  "rejected = (if parity view_n then spare else assigned ! 0)"
-  unfolding rejected_def choice_0 by simp
+sublocale cat_k_parity < cat_0 spare assigned "choices assigned" k
+  apply unfold_locales
+  unfolding choice_0 candidates_0
+  by simp
 
 lemma (in cat_k_parity) parity_k: "parity view_k"
   using parity_0 view_eq by simp
 
-lemma (in cat_k_parity) choice_k:
-  shows "choices assigned ! k \<in> candidates k"
-  unfolding choices[OF k_max refl] candidates_def
-  
-  sorry
+lemmas (in cat_k_parity)
+  choices_k = choices[OF k_max refl, folded heard_def seen_def]
 
-lemma (in cat_k_parity) choice_rejected_k:
-  shows "choices assigned ! k \<noteq> rejected"
-  sorry
+lemmas (in cat_k_parity)
+  candidates_excluding_k = candidates_k[unfolded candidates_def]
 
-lemmas (in cat_k_parity) thms
-  = cat_k_axioms choice_0 choice_k choice_rejected_k
-
-lemma (in parity) cat_k_parity_rejected_k:
-  assumes "cat_k_parity spare assigned parity k"
-  shows "rejected_k spare assigned (choices assigned) k"
-  unfolding rejected_k_def cat_0_def cat_0_axioms_def rejected_k_axioms_def
-  using cat_k_parity.thms[OF assms]
-  by auto
+lemma (in cat_k_parity) choice_k: "choices assigned ! k = assigned ! k"
+  using parity_correct[OF distinct_k] distinct_k parity_k
+  unfolding choices_k choice_def candidates_excluding_k
+  by (subst sorted_list_of_set_distinct_pair) auto
 
 lemma (in hats_parity) cat_k_cat_k_parity:
   assumes "cat_k spare assigned (choices assigned) k"
@@ -666,8 +639,7 @@ lemma (in hats_parity) cat_k_cat_k_parity:
 
 lemma (in hats_parity) parity_choices_correct:
   "k \<in> {1..<length assigned} \<Longrightarrow> choices assigned ! k = assigned ! k"
-  using rejected_induct cat_k_parity_rejected_k cat_k_cat_k_parity
-  by auto
+  by (rule cat_k_induct[OF cat_k_parity.choice_k, OF cat_k_cat_k_parity])
 
 section \<open>The parity function\<close>
 
