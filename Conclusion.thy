@@ -1,11 +1,13 @@
+section \<open>Top-level theorems\<close>
+
+(*<*)
 theory Conclusion
 imports Introduction Parity_Swap
 begin
+(*>*)
 
 global_interpretation parity_classifier parity
   using parity_swap[where as="[]"] by unfold_locales simp
-
-thm choice_def
 
 sublocale hats < hats_parity spare assigned parity
   by unfold_locales
@@ -22,6 +24,20 @@ begin
 
 end
 
+(*<*)
 thm choices choices_correct choices_distinct
+(*>*)
 
+text \<open>
+
+@{thm choices}
+
+@{thm choices_correct}
+
+@{thm choices_distinct}
+
+\<close>
+
+(*<*)
 end
+(*>*)

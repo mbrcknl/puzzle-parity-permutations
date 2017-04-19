@@ -460,7 +460,8 @@ lemma (in classifier) choices':
 
 lemma (in classifier) choices:
   assumes "i < length assigned"
-  shows "choices assigned ! i = choice (take i (choices assigned)) (drop (Suc i) assigned)"
+  assumes "spoken = choices assigned"
+  shows "spoken ! i = choice (take i spoken) (drop (Suc i) assigned)"
   using assms choices' by (simp add: choices_def)
 
 lemma (in classifier) choices'_length: "length (choices' heard assigned) = length assigned"

@@ -9,6 +9,7 @@ session Puzzle = HOL +
   theories
     Introduction
     Parity_Swap
+    Conclusion
     Puzzle
   theories [document=false]
     Parity_Inversions
