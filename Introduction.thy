@@ -70,12 +70,6 @@ lemma (in hats) distinct: "distinct (spare # assigned)"
   apply (subst assign)
   by auto
 
-lemma (in hats) distinct_pointwise:
-  assumes "i < length assigned"
-  shows "spare \<noteq> assigned ! i
-           \<and> (\<forall> j < length assigned. i \<noteq> j \<longrightarrow> assigned ! i \<noteq> assigned ! j)"
-  using assms distinct by (auto simp: nth_eq_iff_index_eq)
-
 text \<open>
 
 The proof developed this way turns out to be more convoluted than it needs to
@@ -237,6 +231,28 @@ where
 definition (in cats)
   "candidates k \<equiv> candidates_excluding (heard k) (seen k)"
 
+lemma (in cats) candidates_i:
+  fixes a b i
+  defines v: "view \<equiv> (a # heard i @ b # seen i)"
+  assumes i: "i < length assigned"
+  assumes d: "distinct view"
+  assumes s: "set view = {0..length assigned}"
+  shows "candidates i = {a,b}"
+  proof -
+    let ?excluded = "heard i @ seen i"
+    have len: "1 + length ?excluded = length assigned"
+      unfolding heard_def seen_def using i length by auto
+    have set: "set ?excluded = {0..length assigned} - {a,b}"
+      apply (rule subset_minusI)
+      using s d unfolding v by auto
+    show ?thesis
+      unfolding candidates_def candidates_excluding_def Let_def
+      unfolding len set
+      unfolding Diff_Diff_Int subset_absorb_r
+      using s unfolding v
+      by auto
+  qed
+
 text \<open>
 
 Since none of the cats $\setc{i}{0 \leq i < k}$ previously said $k$'s number,
@@ -256,28 +272,13 @@ cat are as we expect:
 lemma (in cat_k) exists_0: "0 < length assigned"
   using k_min k_max by auto
 
-lemmas (in cat_k) assigned_0
-  = Cons_nth_drop_Suc[OF exists_0, simplified]
+lemma (in cat_k) assigned_0: "assigned ! 0 # drop (Suc 0) assigned = assigned"
+  using Cons_nth_drop_Suc[OF exists_0] by simp
 
 lemma (in cat_k) candidates_0: "candidates 0 = {spare, assigned ! 0}"
-  proof -
-    let ?excluded = "heard 0 @ seen 0"
-    have len: "1 + length ?excluded = length assigned"
-      unfolding heard_def seen_def using exists_0 by simp
-    have set: "set ?excluded = {0..length assigned} - {spare, assigned ! 0}"
-      unfolding heard_def seen_def
-      using assign assigned_0 distinct
-            Diff_insert2 Diff_insert_absorb distinct.simps(2)
-            list.simps(15) self_append_conv2 take_0
-      by metis
-    show ?thesis
-      unfolding candidates_def candidates_excluding_def Let_def
-      unfolding len set
-      unfolding Diff_Diff_Int subset_absorb_r
-      unfolding assign[symmetric]
-      using exists_0
-      by auto
-  qed
+  apply (rule candidates_i[OF exists_0])
+  using distinct assign unfolding heard_def seen_def assigned_0
+  by auto
 
 text \<open>
 
@@ -301,29 +302,6 @@ the assumptions by proving that this is an ordering of the complete set of hats.
 
 \<close>
 
-abbreviation (in cat_k) (input)
-  "view_k \<equiv> rejected # heard k @ assigned ! k # seen k"
-
-lemma (in cat_k) candidates_k:
-  assumes "distinct view_k" "set view_k = {0..length assigned}"
-  shows "candidates k = {rejected, assigned ! k}"
-  proof -
-    let ?excluded = "heard k @ seen k"
-    have len: "1 + length ?excluded = length assigned"
-      using k_min k_max heard_k seen_def[of k] by simp
-    have set: "set ?excluded = {0..length assigned} - {rejected, assigned ! k}"
-      apply (rule subset_minusI)
-      using assms by auto
-    show ?thesis
-      unfolding candidates_def candidates_excluding_def Let_def
-      unfolding len set
-      unfolding Diff_Diff_Int subset_absorb_r
-      unfolding assign[symmetric]
-      unfolding rejected_def
-      using k_max exists_0
-      by auto
-  qed
-
 text \<open>
 
 We'll prove the assumptions by appealing to two other orderings of the complete
@@ -333,11 +311,9 @@ so we can easily prove the relevant properties of @{text view_n}
 
 \<close>
 
+abbreviation (in cat_k) (input) "view_k \<equiv> rejected # heard k @ assigned ! k # seen k"
 abbreviation (in cat_k) (input) "view_n \<equiv> spare # assigned ! 0 # seen 0"
 abbreviation (in cat_k) (input) "view_0 \<equiv> rejected # spoken ! 0 # seen 0"
-
-lemma (in cat_k) view_n: "view_n = spare # assigned"
-  unfolding seen_def assigned_0 by simp
 
 lemma (in cat_k)
   distinct_n: "distinct view_n" and
@@ -357,12 +333,12 @@ lemmas (in cat_k) drop_maps =
   drop_map_nth[OF less_imp_le_nat, OF k_max]
   drop_map_nth[OF Suc_leI[OF exists_0]]
 
-lemma (in cat_k) view_eq: "view_k = view_0"
+lemma (in cat_k) view_eq: "view_0 = view_k"
   unfolding heard_k seen_def
   apply (simp add: k_max Cons_nth_drop_Suc drop_maps)
   apply (subst map_append[symmetric])
   apply (rule arg_cong[where f="map _"])
-  apply (rule range_app)
+  apply (rule range_app[symmetric])
   using k_max k_min less_imp_le Suc_le_eq by auto
 
 text \<open>
@@ -398,7 +374,7 @@ lemma (in cat_0)
   by auto
 
 lemma (in cat_0) candidates_k: "candidates k = {rejected, assigned ! k}"
-  using candidates_k distinct_k set_k by simp
+  using candidates_i[OF k_max] distinct_k set_k by simp
 
 text \<open>
 
@@ -587,25 +563,28 @@ sublocale hats_parity < cats spare assigned "choices assigned"
   apply unfold_locales
   by (rule choices_length)
 
-locale cat_k_parity
-  = hats_parity spare assigned parity
+locale cat_k_parity = hats_parity spare assigned parity
   + cat_k spare assigned "choices assigned" k
   for spare assigned parity k
 
-lemmas (in cat_k_parity)
-  candidates_excluding_0 = candidates_0[unfolded candidates_def heard_def take_0]
+lemma (in cat_k_parity) candidates_excluding_0:
+  "candidates_excluding [] (seen 0) = {spare, assigned ! 0}"
+  using candidates_0 unfolding candidates_def heard_def take_0 by simp
 
-lemmas (in cat_k_parity)
-  choices_0 = choices[OF exists_0 refl, simplified, folded seen_def]
+lemma (in cat_k_parity) choices_0: "choices assigned ! 0 = choice [] (seen 0)"
+  using choices[OF exists_0] unfolding seen_def by simp
 
-lemmas (in cat_k_parity)
-  parity_swap_0 = parity_correct[of _ "[]", unfolded append_Nil, OF distinct_n]
+lemma (in cat_k_parity) parity_swap_0:
+  "parity (spare # assigned ! 0 # seen 0) \<longleftrightarrow> \<not> parity (assigned ! 0 # spare # seen 0)"
+  using parity_correct[of spare "[]"] distinct_n by simp
 
-lemma (in cat_k_parity)
-  parity_0: "parity view_0"
+lemma (in cat_k_parity) parity_0: "parity view_0"
   using distinct_n parity_swap_0
   unfolding choices_0 choice_def candidates_excluding_0 rejected_def
   by auto
+
+lemma (in cat_k_parity) parity_k: "parity view_k"
+  using parity_0 view_eq by simp
 
 lemma (in cat_k_parity) choice_0:
   "choices assigned ! 0 = (if parity view_n then assigned ! 0 else spare)"
@@ -618,14 +597,13 @@ sublocale cat_k_parity < cat_0 spare assigned "choices assigned" k
   unfolding choice_0 candidates_0
   by simp
 
-lemma (in cat_k_parity) parity_k: "parity view_k"
-  using parity_0 view_eq by simp
+lemma (in cat_k_parity) choices_k:
+  "choices assigned ! k = choice (heard k) (seen k)"
+  unfolding heard_def seen_def using choices[OF k_max] by simp
 
-lemmas (in cat_k_parity)
-  choices_k = choices[OF k_max refl, folded heard_def seen_def]
-
-lemmas (in cat_k_parity)
-  candidates_excluding_k = candidates_k[unfolded candidates_def]
+lemma (in cat_k_parity) candidates_excluding_k:
+  "candidates_excluding (heard k) (seen k) = {rejected, assigned ! k}"
+  using candidates_k unfolding candidates_def by simp
 
 lemma (in cat_k_parity) choice_k: "choices assigned ! k = assigned ! k"
   using parity_correct[OF distinct_k] distinct_k parity_k
@@ -642,8 +620,6 @@ lemma (in hats_parity) parity_choices_correct:
   by (rule cat_k_induct[OF cat_k_parity.choice_k, OF cat_k_cat_k_parity])
 
 section \<open>The parity function\<close>
-
-section \<open>Proof\<close>
 
 (*<*)
 end
