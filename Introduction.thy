@@ -641,15 +641,35 @@ lemma (in cats) distinct_pointwise:
 lemma (in hats_parity) choices_distinct: "distinct (choices assigned)"
   proof (cases "0 < length assigned")
     case True
-    interpret cat_0_parity spare assigned parity using True by unfold_locales
+    interpret cat_0_parity spare assigned parity
+      using True by unfold_locales
     show ?thesis
       apply (clarsimp simp: distinct_conv_nth_less choices_length)
       apply (case_tac "i = 0")
       using True choices_correct choice_0 distinct_pointwise
       by (auto split: if_splits)
   next
-    case False thus ?thesis using choices_length[of assigned] by simp
+    case False
+    thus ?thesis using choices_length[of assigned] by simp
   qed
+
+lemma (in hats_parity) choice_legal:
+  assumes "i < length assigned"
+  shows "choices assigned ! i \<in> set (spare # assigned)"
+  proof (cases "i = 0")
+    case True
+    interpret cat_0_parity spare assigned parity
+      using assms True by unfold_locales simp
+    show ?thesis using choice_0 using assms True by simp
+  next
+    case False
+    thus ?thesis using assms choices_correct by auto
+  qed
+
+lemma (in hats_parity) choices_legal:
+  "set (choices assigned) \<subseteq> set (spare # assigned)"
+  using choices_length choice_legal subsetI in_set_conv_nth
+  by metis
 
 section \<open>The parity function\<close>
 
