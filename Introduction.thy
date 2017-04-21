@@ -25,7 +25,7 @@ text \<open>
 In this article, we will figure out how the cats do this. We'll start with some
 informal analysis, deriving the solution by asking what properties it must
 have, and refining these properties until we can realise them with a concrete
-algorithm.  We'll also develop a formal proof in Isabelle/HOL that the method
+algorithm. We'll also develop a formal proof in Isabelle/HOL that the method
 always works.
 
 Along the way, we'll rediscover a fundamental property of permutation groups,
@@ -33,20 +33,20 @@ and we'll gain some familiarity with basic tools of formal mathematical proof.
 
 For the informal analysis, we'll work from the top down, so you can see the
 solution unfold gradually. Each refinement will be small, and may seem like it
-is the only possible step.
+is the only possible step. As we do this, we'll use Isabelle/HOL to make each
+step of the informal analysis more precise, and to check that our reasoning is
+sound.
 
-We would like to use Isabelle/HOL to make our informal analysis more precise.
-However, our proof is inherently bottom up, from the solution we ultimately
-identify to a theorem that it solves the puzzle.
-
-So, to allow us to develop the proof as we work top down, we need to turn the
-proof upside down. We'll do this by temporarily assuming things we believe must
-be true for the puzzle to have a solution, but which we don't yet know how to
-prove. To avoid repeating assumptions, we'll use the \emph{locale} mechanism of
+However, there's a problem with this: our proof is inherently bottom up, from
+the solution we ultimately identify, to a theorem that it solves the puzzle.
+So, to allow us to develop the proof as we work top down, we need to invert the
+proof. We'll do this by temporarily assuming things we believe must be true for
+the puzzle to have a solution, but which we don't yet know how to prove. To
+avoid repeating assumptions, we'll use the \emph{locale} mechanism of
 Isabelle/HOL to create named bundles of assumptions. Later, we'll discharge
-assumptions using the locale \emph{interpretataion} mechanism.
+our assumptions using locale \emph{interpretataion}.
 
-To illustrate, we can use a locale to describe the basic setup of the puzzle:
+Our first locale describes the basic setup of the puzzle:
 
 \<close>
 
