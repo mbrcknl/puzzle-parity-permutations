@@ -1,7 +1,7 @@
 section \<open>Miscellaneous facts\<close>
 
 theory Lib
-imports Main
+imports LatexRuleSugar
 begin
 
 lemma take_map_nth: "i \<le> length xs \<Longrightarrow> take i xs = map (op ! xs) [0 ..< i]"

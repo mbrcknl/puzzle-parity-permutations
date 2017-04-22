@@ -31,7 +31,9 @@ text \<open>
 We have four top-level theorems which show that we have solved the puzzle.
 The first shows that we have not cheated:
 
-@{thm[display] choices[no_vars]}
+\begin{center}
+@{thm[mode=Rule] choices[no_vars]}
+\end{center}
 
 We don't need to look at the implementation of @{term choices} or @{term choice}
 to know this! The theorem is parametric in the set of @{text spare} and @{text
@@ -42,12 +44,19 @@ cannot.
 The next two show that the @{text choices} are legal. That is, every cat chooses
 the number of some hat, and no number is repeated:
 
-@{thm[display] choices_legal[no_vars]}
-@{thm[display] choices_distinct[no_vars]}
+\begin{center}
+@{thm[mode=Rule] choices_legal[no_vars]}
+\end{center}
+
+\begin{center}
+@{thm[mode=Rule] choices_distinct[no_vars]}
+\end{center}
 
 Finally, every cat except the rearmost chooses the number of its assigned hat:
 
-@{thm[display] choices_correct[no_vars]}
+\begin{center}
+@{thm[mode=Rule] choices_correct[no_vars]}
+\end{center}
 
 \<close>
 

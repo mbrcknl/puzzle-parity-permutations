@@ -82,8 +82,10 @@ The @{term hats} locale takes two \emph{parameters} introduced with
   \item @{text spare}, of type @{typ nat}, represents the number of the spare
   hat,
 
-  \item @{text assigned}, a @{text "list"} of natural (@{typ nat}) numbers,
-  represents the hats assigned to cats, in order from back to front.
+  \item @{text assigned}, of type @{typ nat} @{text "list"},\footnote{In
+  Isabelle/HOL, type constructor application is written right-to-left, so a
+  @{typ nat} @{text "list"} is a list of natural numbers.} represents the hats
+  assigned to cats, in order from back to front.
 
 \end{itemize}
 
@@ -96,12 +98,14 @@ parameters.
 
 The @{term hats} locale also has an \isacommand{assumes} declaration, which
 introduces an assumption named @{text assign}. It asserts that if we take the
-@{text spare} hat together with the @{text assigned} hats, and convert to an
-unordered set with the @{term set} function, then we have the set of natural
-numers from @{text "0"} up to the number of @{text assigned} hats, inclusive.
-This specifies the possible hat numbers, but because we use unordered sets, it
-does not say anything about the order of @{text assigned} hats, nor which is
-the @{text spare} hat.
+set of all hats, including the @{text spare} and @{text assigned}
+hats,\footnote{The @{text #} constructor builds a new list from an existing
+element and list; and the @{text set} function converts a @{text list} to an
+unordered @{text set} type.} then we have the set of natural numers from @{text
+"0"} up to the number of @{text assigned} hats, inclusive.  This specifies the
+possible hat numbers, but because we use unordered sets, it does not say
+anything about the order of @{text assigned} hats, nor which is the @{text
+spare} hat.
 
 We can now prove lemmas in the context of the @{term hats} locale, which means
 that these lemmas can talk about the @{text spare} and @{text assigned} hats,
@@ -204,7 +208,7 @@ ensuring that:
 
 \end{itemize}
 
-We'll use another locale, and subsequent definitions in the locale context, to
+We'll use another locale, and some definitions in the locale context, to
 describe the information flow:
 
 \<close>
@@ -223,7 +227,8 @@ text \<open>
 Informally, the declaration says that there is a list of numbers @{text spoken}
 by the cats, which is just as long as the list of @{text assigned} hats. We
 define functions @{term heard} and @{term seen}, such that @{text heard} @{text
-k} and @{text seen} @{text k} are the numbers heard and seen by cat @{text k}.
+k} and @{text seen} @{text k} are the lists of numbers heard and seen by cat
+@{text k}.
 
 The only remarkable thing about the @{term cats} locale is that it
 \emph{extends} the @{term hats} locale. This means that the \isacommand{fixes}
@@ -278,7 +283,9 @@ considered all the cats $\setc{i}{0 \leq i < k}$ behind it.
 We'll use a locale to package up the so-called \emph{induction hypothesis}.
 That is, we'll fix some cat @{text k}, which is not the rearmost cat, and
 assume that all the cats behind it, except the rearmost cat, said the correct
-number:
+number:\footnote{Infix operator @{text "!"} retrieves the @{text nth} element
+from a @{text list}; and @{text "{a..<b}"} is the set $\setc{n}{a \leq n <
+b}$.}
 
 \<close>
 
@@ -312,12 +319,12 @@ Note the keywords \isacommand{assumes} and \isacommand{shows} in the
 \isacommand{lemma} statement. The first allows us to make additional
 assumptions for this lemma. The second introduces the thing we want to prove
 from the assumptions. If we have no local \isacommand{assumes} declarations, we
-can omit the \isacommand{shows} keyword, as we have done previously.
+can omit the \isacommand{shows} keyword, as we did in @{text distict_hats}.
 
 In @{text cat_k_induct}, we've slightly abused the locale mechanism, by using
 the @{term cat_k} locale as a logical predicate, applied to some arguments. We
-only do this a couple of times, but it saves us many times we would otherwise
-need to repeat the induction hypothesis.
+only do this a couple of times, but it saves us from having to repeat the
+induction hypothesis many times.
 
 As an example of something we can prove \emph{within} the @{term cat_k} locale,
 we show that the tail of @{text heard} @{text k} can be rewritten in terms of
