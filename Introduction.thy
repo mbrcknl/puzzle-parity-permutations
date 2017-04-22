@@ -25,28 +25,42 @@ text \<open>
 In this article, we will figure out how the cats do this. We'll start with some
 informal analysis, deriving the solution by asking what properties it must
 have, and refining these properties until we can realise them with a concrete
-algorithm. We'll also develop a formal proof in Isabelle/HOL that the method
-always works.
+algorithm. We'll also develop a formal proof that the method always works,
+using Isabelle/HOL.
 
 Along the way, we'll rediscover a fundamental property of permutation groups,
-and we'll gain some familiarity with basic tools of formal mathematical proof.
+and we'll gain some familiarity with some basic methods of formal mathematical
+proof.
 
-For the informal analysis, we'll work from the top down, so you can see the
-solution unfold gradually. Each refinement will be small, and may seem like it
-is the only possible step. As we do this, we'll use Isabelle/HOL to make each
-step of the informal analysis more precise, and to check that our reasoning is
-sound.
+Although this is not intended as an Isabelle/HOL tutorial, we hope that it is
+accessible to readers with no formal theorem proving experience. We do assume
+familiarity with some fundamentals of functional programming and classical
+logic. We won't explain the detailed steps required to prove each lemma, but we
+will explain how each lemma fits into the overall progression of the proof.
 
-However, there's a problem with this: our proof is inherently bottom up, from
-the solution we ultimately identify, to a theorem that it solves the puzzle.
-So, to allow us to develop the proof as we work top down, we need to invert the
-proof. We'll do this by temporarily assuming things we believe must be true for
-the puzzle to have a solution, but which we don't yet know how to prove. To
-avoid repeating assumptions, we'll use the \emph{locale} mechanism of
-Isabelle/HOL to create named bundles of assumptions. Later, we'll discharge
-our assumptions using locale \emph{interpretataion}.
+For the informal analysis, we'll work from the top down, gradually unfolding
+the solution. Each refinement will be small, and may seem like it is the only
+possible step. As we do this, we'll use Isabelle/HOL to make each step of the
+analysis more precise, and to check that our reasoning is sound.
 
-Our first locale describes the basic setup of the puzzle:
+However, there's a problem with this approach: our proof is inherently bottom
+up, building from the solution we ultimately identify, to a theorem that it
+solves the puzzle. We do not attempt to show that our solution is the
+\emph{only} possible solution, although our informal analysis suggests that it
+is\footnote{at least, up to some fairly strong equivalence.}.
+
+To develop the proof as we work top down, we need a way to invert the proof.
+We'll do this by temporarily \emph{assuming} things we believe must be true for
+the puzzle to have a solution, but which we don't yet know how to prove. But
+we'll typically need to carry these assumptions through many lemmas. So, to
+avoid repeating assumptions, we'll use the \isacommand{locale} mechanism of
+Isabelle/HOL to create named bundles of assumptions. Later, we'll discharge our
+assumptions using locale \emph{interpretataion}.
+
+Our first locale, @{text hats}, describes the basic setup of the
+puzzle:\footnote{When reading Isabelle/HOL, you may ignore double quotes. They
+are there for technical reasons which have very little to do with the
+specification or proof you are reading.}
 
 \<close>
 
@@ -60,21 +74,81 @@ locale hats =
 
 text \<open>
 
-In this locale, we can use a cardinality argument to prove that the hats are
-numbered distinctly:
+The @{term hats} locale takes two \emph{parameters} introduced with
+\isacommand{fixes} declarations:
+
+\begin{itemize}
+
+  \item @{text spare}, of type @{typ nat}, represents the number of the spare
+  hat,
+
+  \item @{text assigned}, a @{text "list"} of natural (@{typ nat}) numbers,
+  represents the hats assigned to cats, in order from back to front.
+
+\end{itemize}
+
+By \emph{parameter}, we mean a placeholder for an arbitrary value of the given
+type. It is bound, or fixed, to the locale, so every mention of it in the
+locale context refers to the same hypothetical value. The \isacommand{fixes}
+declaration does not specify \emph{which} value, although subsequent locale
+assumptions may have the effect of restricting the possible values of
+parameters.
+
+The @{term hats} locale also has an \isacommand{assumes} declaration, which
+introduces an assumption named @{text assign}. It asserts that if we take the
+@{text spare} hat together with the @{text assigned} hats, and convert to an
+unordered set with the @{term set} function, then we have the set of natural
+numers from @{text "0"} up to the number of @{text assigned} hats, inclusive.
+This specifies the possible hat numbers, but because we use unordered sets, it
+does not say anything about the order of @{text assigned} hats, nor which is
+the @{text spare} hat.
+
+We can now prove lemmas in the context of the @{term hats} locale, which means
+that these lemmas can talk about the @{text spare} and @{text assigned} hats,
+and implicitly make the @{text assign} assumption.
+
+For example, from this assumption, we can show that the hats all have distinct
+numbers:
 
 \<close>
 
-lemma (in hats) distinct: "distinct (spare # assigned)"
-  apply (rule card_distinct)
-  apply (subst assign)
-  by auto
+lemma (in hats) "distinct (spare # assigned)"
+  proof -
+    -- "We start by restating our locale assumption."
+    have "set (spare # assigned) = {0 .. length assigned}"
+      by (rule assign)
+    -- "We apply the @{text card} (set cardinality) function to both sides."
+    hence "card (set (spare # assigned)) = card {0 .. length assigned}"
+      by (rule arg_cong[where f=card])
+    -- "We substitute an equivalent right-hand side, using built-in simplifications."
+    hence "card (set (spare # assigned)) = 1 + length assigned"
+      by simp
+    -- "We substitute another right-hand side."
+    hence "card (set (spare # assigned)) = length (spare # assigned)"
+      by simp
+    -- "The library fact @{text card_distinct} says a list is distinct
+        if its length equals the cardinality of its set."
+    thus "distinct (spare # assigned)"
+      by (rule card_distinct)
+  qed
 
 text \<open>
 
-The proof developed this way turns out to be more convoluted than it needs to
-be, so the appendix contains a version of the proof written in a more direct
-style.
+The above proof contains much more detail than Isabelle/HOL requires. In the
+rest of this article, we'll write much terser individual proofs, since we want
+to focus on the higher-level development.
+
+For example, we could shorten this proof as follows:
+
+\<close>
+
+lemma (in hats) distinct_hats: "distinct (spare # assigned)"
+  by (rule card_distinct, subst assign, simp)
+
+text \<open>
+
+We've also given the lemma a name, @{text distinct_hats}, so we can refer to
+the proven fact later.
 
 \<close>
 
@@ -130,7 +204,8 @@ ensuring that:
 
 \end{itemize}
 
-We'll use a locale to describe the information flow:
+We'll use another locale, and subsequent definitions in the locale context, to
+describe the information flow:
 
 \<close>
 
@@ -143,7 +218,28 @@ locale cats = hats +
 definition (in cats) "heard k \<equiv> take k spoken"
 definition (in cats) "seen k \<equiv> drop (Suc k) assigned"
 
-subsection \<open>The rearmost cat is special\<close>
+text \<open>
+
+Informally, the declaration says that there is a list of numbers @{text spoken}
+by the cats, which is just as long as the list of @{text assigned} hats. We
+define functions @{term heard} and @{term seen}, such that @{text heard} @{text
+k} and @{text seen} @{text k} are the numbers heard and seen by cat @{text k}.
+
+The only remarkable thing about the @{term cats} locale is that it
+\emph{extends} the @{term hats} locale. This means that the \isacommand{fixes}
+and \isacommand{assumes} declarations from the @{term hats} locale become
+available in the context of the @{term cats} locale. Lemmas proved in the
+@{term hats} locale also become available in the @{term cats} locale, whether
+they were proved before or after the @{term cats} locale declaration.
+
+Why did we not make these \isacommand{fixes} and \isacommand{assumes}
+declarations in the @{term hats} locale? Eventually, we want to discharge the
+@{text length} assumption, but we can never discharge the @{text assign}
+assumption. As we'll see later, this means we need a separate locale.
+
+\<close>
+
+subsection \<open>The role of the rearmost cat\<close>
 
 text \<open>
 
@@ -155,6 +251,9 @@ performance, it could be either of the two hats that are invisible to all cats.
 To guarantee success, the cats must therefore assume the worst: that the
 rearmost cat got it wrong. But this means that all the other cats \emph{must}
 get it right!
+
+The role of the rearmost cat is therefore not to try to guess his own hat, but
+to pass the right information to the other cats.
 
 \<close>
 
@@ -174,8 +273,12 @@ using what we've already shown about cats $\setc{i}{0 \leq i < k}$ when we're
 proving that cat $k$ makes the right choice. Mathematical induction merely says
 that if all steps are alike, we can take an arbitrary number of them all at
 once, by considering an arbitrary cat $k$, and assuming we've already
-considered all the cats $\setc{i}{0 \leq i < k}$ behind it. We'll use a locale
-to package the induction hypothesis:
+considered all the cats $\setc{i}{0 \leq i < k}$ behind it.
+
+We'll use a locale to package up the so-called \emph{induction hypothesis}.
+That is, we'll fix some cat @{text k}, which is not the rearmost cat, and
+assume that all the cats behind it, except the rearmost cat, said the correct
+number:
 
 \<close>
 
@@ -185,6 +288,12 @@ locale cat_k = cats +
   assumes k_max: "k < length assigned"
   assumes IH: "\<forall>i \<in> {1 ..< k}. spoken ! i = assigned ! i"
 
+text \<open>
+
+Using this, we can already formalise the induction argument:
+
+\<close>
+
 lemma (in cats) cat_k_induct:
   assumes "\<And>k. cat_k spare assigned spoken k \<Longrightarrow> spoken ! k = assigned ! k"
   shows "k \<in> {1 ..< length assigned} \<Longrightarrow> spoken ! k = assigned ! k"
@@ -192,6 +301,29 @@ lemma (in cats) cat_k_induct:
   apply (rule assms)
   apply (unfold_locales)
   by auto
+
+text \<open>
+
+This says that, in the @{term cats} locale, if any cat @{text k} satisfying
+@{term cat_k} says the correct number, then every cat except the rearmost says
+the correct number. We more or less get the induction hypothesis for free.
+
+Note the keywords \isacommand{assumes} and \isacommand{shows} in the
+\isacommand{lemma} statement. The first allows us to make additional
+assumptions for this lemma. The second introduces the thing we want to prove
+from the assumptions. If we have no local \isacommand{assumes} declarations, we
+can omit the \isacommand{shows} keyword, as we have done previously.
+
+In @{text cat_k_induct}, we've slightly abused the locale mechanism, by using
+the @{term cat_k} locale as a logical predicate, applied to some arguments. We
+only do this a couple of times, but it saves us many times we would otherwise
+need to repeat the induction hypothesis.
+
+As an example of something we can prove \emph{within} the @{term cat_k} locale,
+we show that the tail of @{text heard} @{text k} can be rewritten in terms of
+the @{text assigned} hats:
+
+\<close>
 
 lemma (in cat_k) k_max_spoken: "k < length spoken"
   using k_max length by simp
@@ -282,7 +414,7 @@ lemma (in cat_0) assigned_0: "assigned ! 0 # drop (Suc 0) assigned = assigned"
 
 lemma (in cat_0) candidates_0: "candidates 0 = {spare, assigned ! 0}"
   apply (rule candidates_i[OF exists_0])
-  using distinct assign unfolding heard_def seen_def assigned_0
+  using distinct_hats assign unfolding heard_def seen_def assigned_0
   by auto
 
 text \<open>
@@ -323,7 +455,7 @@ abbreviation (in cat_k) (input) "view_k \<equiv> rejected # heard k @ assigned !
 lemma (in cat_0)
   distinct_n: "distinct view_n" and
   set_n: "set view_n = {0..length assigned}"
-  using distinct assign
+  using distinct_hats assign
   unfolding seen_def assigned_0
   by auto
 
@@ -636,7 +768,7 @@ lemma (in cats) distinct_pointwise:
   assumes "i < length assigned"
   shows "spare \<noteq> assigned ! i
            \<and> (\<forall> j < length assigned. i \<noteq> j \<longrightarrow> assigned ! i \<noteq> assigned ! j)"
-  using assms distinct by (auto simp: nth_eq_iff_index_eq)
+  using assms distinct_hats by (auto simp: nth_eq_iff_index_eq)
 
 lemma (in hats_parity) choices_distinct: "distinct (choices assigned)"
   proof (cases "0 < length assigned")
