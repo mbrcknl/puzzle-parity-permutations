@@ -1,6 +1,6 @@
 (*<*)
 theory Introduction
-imports Lib
+imports "lib/Lib"
 begin
 (*>*)
 
@@ -35,8 +35,10 @@ proof.
 Although this is not intended as an Isabelle/HOL tutorial, we hope that it is
 accessible to readers with no formal theorem proving experience. We do assume
 familiarity with some fundamentals of functional programming and classical
-logic. We won't explain the detailed steps required to prove each lemma, but we
-will explain how each lemma fits into the overall progression of the proof.
+logic.\footnote{Some exposure to Haskell, ML or similar, predicate logic with
+quantifiers, and naive set theory should be adequate.} We won't explain the
+detailed steps required to prove each lemma, but we will explain how each lemma
+fits into the overall progression of the proof.
 
 For the informal analysis, we'll work from the top down, gradually unfolding
 the solution. Each refinement will be small, and may seem like it is the only
@@ -47,7 +49,7 @@ However, there's a problem with this approach: our proof is inherently bottom
 up, building from the solution we ultimately identify, to a theorem that it
 solves the puzzle. We do not attempt to show that our solution is the
 \emph{only} possible solution, although our informal analysis suggests that it
-is\footnote{at least, up to some fairly strong equivalence.}.
+is.
 
 To develop the proof as we work top down, we need a way to invert the proof.
 We'll do this by temporarily \emph{assuming} things we believe must be true for
@@ -156,21 +158,13 @@ the proven fact later.
 
 \<close>
 
-section \<open>Initial observations\<close>
+section \<open>Taking turns\<close>
 
 text \<open>
 
-We can begin to structure our thinking by making some initial observations.
-
-\<close>
-
-subsection \<open>Ordering the calls\<close>
-
-text \<open>
-
-The rules require each cat to make exactly one call, but do not specify the
-order in which they do this. We can see that the order we choose affects the
-distribution of information:
+The rules require each cat to say exactly one hat number, but do not specify
+the order in which they do this. We can see that the order we choose affects
+the distribution of information:
 
 \begin{itemize}
 
@@ -214,12 +208,15 @@ describe the information flow:
 \<close>
 
 locale cats = hats +
-  -- "numbers spoken by cats, in order from back to front"
+  -- "Numbers said by the cats, in order from back to front."
   fixes spoken :: "nat list"
-  -- "each cat speaks exactly once"
+  -- "Each cat speaks exactly once."
   assumes length: "length spoken = length assigned"
 
+-- "Each cat hears what was said by the cats behind it."
 definition (in cats) "heard k \<equiv> take k spoken"
+
+-- "Each cat sees the @{text assigned} hats in front of it."
 definition (in cats) "seen k \<equiv> drop (Suc k) assigned"
 
 text \<open>
@@ -244,7 +241,7 @@ assumption. As we'll see later, this means we need a separate locale.
 
 \<close>
 
-subsection \<open>The role of the rearmost cat\<close>
+section \<open>The rearmost cat\<close>
 
 text \<open>
 
@@ -262,7 +259,7 @@ to pass the right information to the other cats.
 
 \<close>
 
-subsection \<open>Reasoning by induction\<close>
+section \<open>Reasoning by induction\<close>
 
 text \<open>
 
@@ -311,24 +308,28 @@ lemma (in cats) cat_k_induct:
 
 text \<open>
 
-This says that, in the @{term cats} locale, if any cat @{text k} satisfying
-@{term cat_k} says the correct number, then every cat except the rearmost says
-the correct number. We more or less get the induction hypothesis for free.
+This says that, in the @{term cats} locale, if every cat satisfying @{term
+cat_k} says the correct number, then every cat except the rearmost says the
+correct number. We get the induction hypothesis for free!
 
 Note the keywords \isacommand{assumes} and \isacommand{shows} in the
 \isacommand{lemma} statement. The first allows us to make additional
 assumptions for this lemma. The second introduces the thing we want to prove
 from the assumptions. If we have no local \isacommand{assumes} declarations, we
 can omit the \isacommand{shows} keyword, as we did in @{text distict_hats}.
+Logically, an assumption introduced with \isacommand{assumes} is identical to
+one introduced with the implication arrow (@{text "\<Longrightarrow>"}). Which
+to use is a matter of aesthetics.
 
 In @{text cat_k_induct}, we've slightly abused the locale mechanism, by using
-the @{term cat_k} locale as a logical predicate, applied to some arguments. We
+the @{term cat_k} locale as a logical predicate applied to some arguments. We
 only do this a couple of times, but it saves us from having to repeat the
 induction hypothesis many times.
 
 As an example of something we can prove \emph{within} the @{term cat_k} locale,
 we show that the tail of @{text heard} @{text k} can be rewritten in terms of
-the @{text assigned} hats:
+the @{text assigned} hats:\footnote{Keyword @{text op} turns an infix operator
+into a prefix function.}
 
 \<close>
 
@@ -342,7 +343,7 @@ lemma (in cat_k) heard_k:
         range_extract_head[OF k_min]
   by auto
 
-subsection \<open>Candidate selection\<close>
+section \<open>Candidate selection\<close>
 
 text \<open>
 
@@ -526,13 +527,8 @@ text \<open>
 
 If we additionally assumed that cat $k$ chooses one of it's @{text candidates},
 but somehow avoids the @{text rejected} hat, it trivially follows that cat $k$
-chooses its @{text assigned} hat.
-
-This bears repeating, lest we miss its significance!
-
-Working from the rear to the front, if each cat rejects all the numbers it has
-heard and seen, and of the remaining numbers, \emph{additionally rejects the
-same number as the rearmost cat}, then the puzzle is solved.
+chooses its @{text assigned} hat. Our task now is to ensure that cat @{text k}
+does indeed reject the same hat as the rearmost cat.
 
 \<close>
 

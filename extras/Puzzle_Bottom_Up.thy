@@ -1,8 +1,8 @@
 subsection \<open>Solving the puzzle\<close>
 
 (*<*)
-theory Puzzle
-imports Parity_Swap Lib
+theory Puzzle_Bottom_Up
+imports "../Parity_Swap" "../lib/Lib"
 begin
 (*>*)
 

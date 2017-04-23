@@ -2,7 +2,7 @@ subsection \<open>Parity of a list permutation\<close>
 
 (*<*)
 theory Parity_Swap
-imports Lib
+imports "lib/Lib"
 begin
 (*>*)
 

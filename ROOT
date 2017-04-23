@@ -5,15 +5,16 @@ session Puzzle = HOL +
     , document=pdf
     ]
   theories [document=false]
-    Lib
+    "lib/LaTeX_Rule_Sugar"
+    "lib/Lib"
   theories
-    Introduction
-    Parity_Swap
-    Conclusion
-    Puzzle
+    "Introduction"
+    "Parity_Swap"
+    "Conclusion"
   theories [document=false]
-    Parity_Inversions
-    Parity_Extras
-    Parity_Merge_Sort
+    "extras/Puzzle_Bottom_Up"
+    "extras/Parity_Inversions"
+    "extras/Parity_Extras"
+    "extras/Parity_Merge_Sort"
   document_files
     "root.tex"
