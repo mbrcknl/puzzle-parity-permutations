@@ -523,10 +523,15 @@ sublocale cat_k < cat_0
 
 text \<open>
 
-We want to use @{text candidates_i}, but can't immediately satisfy the @{text
-distinct_view} and @{text set_view} premises of @{text candidate_i}, for cat
-@{text k}'s view. However, we notice that there is an ordering of the full set
-of hats which is a view for both cat @{text "0"} and cat @{text k}:
+Why did we not prove @{text exists_0} in locale @{term cat_k} in the first
+place? The reason is that later, we'll need @{text distinct_0} and @{text
+set_0} in a context where we don't have a cat @{text k}, but where we can prove
+@{text exists_0} by other means.
+
+Now, we want to use @{text candidates_i}, but can't immediately satisfy the
+@{text distinct_view} and @{text set_view} premises of @{text candidate_i}, for
+cat @{text k}'s view. However, we notice that there is an ordering of the full
+set of hats which is a view for both cat @{text "0"} and cat @{text k}:
 
 \<close>
 
@@ -579,9 +584,10 @@ lemma (in cat_k) view_eq: "view_r = view_k"
 
 text \<open>
 
-But to do that, we need to know something
-about @{term "spoken ! 0"}. We haven't yet figured out how that choice is
-made, so we'll just assume it's one of the @{text candidates}:
+To prove the second, we need to know something about @{text spoken} @{text "!"}
+@{text "0"}. We haven't yet figured out how that choice is made, so we'll just
+assume it's one of the @{text candidates}. Then we can prove the @{text view_r}
+lemmas directly:
 
 \<close>
 
@@ -597,8 +603,10 @@ lemma (in cat_0_spoken)
 
 text \<open>
 
-Finally, we can prove the properties we wanted for @{text view_k}, and use
-them to discharge the assumptions of @{text candidates_k}.
+Again, we're keeping a separate @{term cat_0} locale hierarchy, because we'll
+need this later. In any case, we can always recombine locales, as we do now to
+prove the @{text view_k} lemmas, and finally, the lemma for @{text
+candidates}~@{term k}:
 
 \<close>
 
@@ -615,9 +623,10 @@ lemma (in cat_k_view) candidates_k: "candidates k = {rejected, assigned ! k}"
 text \<open>
 
 If we additionally assumed that cat $k$ chooses one of it's @{text candidates},
-but somehow avoids the @{text rejected} hat, it trivially follows that cat $k$
-chooses its @{text assigned} hat. Our task now is to ensure that cat @{text k}
-does indeed reject the same hat as the rearmost cat.
+but somehow avoids the @{text rejected} hat, it would trivially follow that cat
+$k$ chooses its @{text assigned} hat. We don't gain much from formalising that
+now, but hopefully it's clear that the remaining task is to ensure that cat
+@{text k} does indeed reject the same hat as the rearmost cat.
 
 \<close>
 
@@ -631,7 +640,7 @@ will \emph{individually} apply, and have convinced themselves that the agreed
 algorithm will bring them \emph{collective} success, no matter how the hats are
 assigned to them.
 
-We can represent the individual algorithm as a function of the information an
+We'll represent the individual algorithm as a function of the information an
 individual cat receives. We don't yet know its definition, but we can write its
 type:
 
@@ -649,7 +658,8 @@ represent the choices of all cats, without loss of generality.
 
 We can partially implement the @{typ choice} function, first calculating the
 @{text candidates}, and deferring the remaining work to a @{text classifier}
-function, which we'll take as a parameter until we know how to implement it:
+function, which we'll take as a locale parameter until we know how to implement
+it:
 
 \<close>
 
