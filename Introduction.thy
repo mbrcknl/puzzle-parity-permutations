@@ -352,13 +352,15 @@ behind it. With a little thought, we can also say that no cat may call a number
 that it can see ahead of it. If it did, there would be at least two incorrect
 calls.
 
-To see this, suppose some cat $k$ said a number that it saw on the hat of $t$
-who is in front of $k$. Hat numbers are unique, so $k$'s number must be
-different from $t$'s, and therefore $k$'s choice is wrong. But $t$ may not
-repeat the number that $k$ said, so $t$ is also wrong.
+To see this, suppose some cat $i$ said a number that it saw on the hat of $j$
+who is in front of $i$. Hat numbers are unique, so $i$'s number must be
+different from $j$'s, and therefore $i$'s choice is wrong. But $j$ may not
+repeat the number that $i$ said, so $j$ is also wrong.
 
-Each cat $k$ therefore has to choose between exactly two candidate hats: those left over
-after excluding all the numbers it has seen and heard:
+Each cat $i$ therefore has to choose between exactly two hats: those remaining
+after excluding all the numbers it has seen and heard. We'll call these the
+@{text candidates}, and we'll make our definition outside our locales, since it
+will form part of our final solution:
 
 \<close>
 
@@ -368,32 +370,73 @@ where
   "candidates_excluding heard seen \<equiv>
     let excluded = heard @ seen in {0 .. 1 + length excluded} - set excluded"
 
+text \<open>
+
+We \emph{calculate} the set of all hats by counting the number of @{text heard}
+and @{text seen}, so we're relying on the fact that the set of all hats is
+always the set containing @{text "0"} up to the number of cats.
+
+For convenience, we'll make a corresponding definition in the @{term cats}
+locale:
+
+\<close>
+
 definition (in cats)
-  "candidates k \<equiv> candidates_excluding (heard k) (seen k)"
+  "candidates i \<equiv> candidates_excluding (heard i) (seen i)"
+
+text \<open>
+
+We now want to prove that @{text candidates} produces the right results.
+Consider cat @{text i}. If we take @{text heard} @{text i} and @{text seen}
+@{text i}, we know that we need to add two more hats to make up the complete
+set. Conversely, if we start with @{text heard} @{text i} and @{text seen}
+@{text i}, and add two hypothetical hats @{text a} and @{text b}, such that the
+result is the complete set of hats, then @{text candidates} @{text i} should be
+those hats @{text a} and @{text b}. Formally:
+
+\<close>
 
 lemma (in cats) candidates_i:
   fixes a b i
-  defines v: "view \<equiv> (a # heard i @ b # seen i)"
-  assumes i: "i < length assigned"
-  assumes d: "distinct view"
-  assumes s: "set view = {0..length assigned}"
+  defines "view \<equiv> (a # heard i @ b # seen i)"
+  assumes i_length: "i < length assigned"
+  assumes distinct_view: "distinct view"
+  assumes set_view: "set view = {0..length assigned}"
   shows "candidates i = {a,b}"
   proof -
     let ?excluded = "heard i @ seen i"
     have len: "1 + length ?excluded = length assigned"
-      unfolding heard_def seen_def using i length by auto
+      unfolding heard_def seen_def using i_length length by auto
     have set: "set ?excluded = {0..length assigned} - {a,b}"
       apply (rule subset_minusI)
-      using s d unfolding v by auto
+      using distinct_view set_view unfolding view_def by auto
     show ?thesis
       unfolding candidates_def candidates_excluding_def Let_def
       unfolding len set
       unfolding Diff_Diff_Int subset_absorb_r
-      using s unfolding v
+      using set_view unfolding view_def
       by auto
   qed
 
 text \<open>
+
+Here, we've introduced the idea of a \emph{view}. This is an hypothetical
+ordering of the complete set of hats, seen from the perspective of some cat.
+In this case, cat @{text i} imagines some hat @{text b} on its own head,
+between the hats it has @{text heard} and @{text seen}, and imagines the
+remaining hat @{text a} on the floor behind the rearmost cat, where no cat can
+see it. The order of the list does not matter here, though it will later, but
+it is still a nice visualisation. Here, we just need to know that the hats in
+the list are exactly those in full set of hats, and we capture this in the
+assumptions @{text distinct_view} and @{text set_view}.
+
+\<close>
+
+section \<open>The rejected hat\<close>
+
+text \<open>
+
+We now return to cat $k$ of the @{term cat_k} locale.
 
 Since none of the cats $\setc{i}{0 \leq i < k}$ previously said $k$'s number,
 $k$'s own number is one of those candidates. Taking into account our assumption
@@ -402,33 +445,48 @@ numbers, we can also say that the other candidate will be the same number which
 the rearmost cat chose \emph{not} to call.
 
 To solve the puzzle, we therefore just need to ensure that every cat $k$
-rejects the same number that the rearmost cat rejected.
+rejects the same number that the rearmost cat rejected. We'll call this the
+\emph{rejected} hat.
 
-To formalise this, we'll first prove that the @{text candidates} for the rearmost
-cat are as we expect:
+To formalise this, we'll need to somehow define the rejected hat. We don't yet
+know how the cats choose their hats, but we can talk about their @{text
+candidates}.
+
+To do this for the rearmost cat, we first need to know that the rearmost cat
+exists, so let's make an assumption:
 
 \<close>
 
 locale cat_0 = cats +
   assumes exists_0: "0 < length assigned"
 
-sublocale cat_k < cat_0
-  apply unfold_locales
-  using k_min k_max
+text \<open>
+
+With this, we can safely extract the first @{text assigned} hat, and prove that
+the rearmost cat's @{text candidates} are as we expect. We make use of the
+@{text candidates_i} lemma, first defining a view, and proving lemmas to
+satisfy the @{text distinct_vew} and @{text set_view} premises.
+
+\<close>
+
+abbreviation (in cat_0) (input) "view_0 \<equiv> spare # assigned ! 0 # seen 0"
+
+lemma (in cat_0)
+  distinct_0: "distinct view_0" and
+  set_0: "set view_0 = {0..length assigned}"
+  using distinct_hats assign
+  unfolding seen_def Cons_nth_drop_Suc[OF exists_0]
   by auto
 
-lemma (in cat_0) assigned_0: "assigned ! 0 # drop (Suc 0) assigned = assigned"
-  using Cons_nth_drop_Suc[OF exists_0] by simp
-
 lemma (in cat_0) candidates_0: "candidates 0 = {spare, assigned ! 0}"
-  apply (rule candidates_i[OF exists_0])
-  using distinct_hats assign unfolding heard_def seen_def assigned_0
+  using candidates_i exists_0 distinct_0 set_0
+  unfolding heard_def seen_def
   by auto
 
 text \<open>
 
-We define the @{text rejected} has as whichever of those the rearmost cat does
-not choose:
+Now we can define the @{text rejected} hat as whichever of those the rearmost
+cat does \emph{not} say:
 
 \<close>
 
@@ -437,40 +495,73 @@ definition (in cat_0)
 
 text \<open>
 
-We can try to prove a similar theorem for cat $k$, but we discover that we need
-some additional assumptions that the expected @{text candidates}, together with
-what cat $k$ has @{text heard} and @{text seen}, constitute the complete set of
-hats.
+We now want to prove that @{text candidates} @{text k} consists of @{text k}'s
+@{text assigned} hat, and the @{text rejected} hat, but there's a problem.
 
-We express these assumptions with an abbreviation @{text view_k}. We'll discharge
-the assumptions by proving that this is an ordering of the complete set of hats.
+Since we defined @{text rejected} in the @{term cat_0} locale, it is not
+currently visible in @{text cat_k}. To make it visible, we need to
+\emph{interpret} the @{term cat_0} locale in the context of @{term cat_k}.
+
+To interpret a locale means to make all the \emph{consequences} of that locale
+available in some new context, including definitions and lemmas proved. But for
+that to be logically sound, this means we need to \emph{prove the assumptions}
+of the locale we are interpreting, in that same context.
+
+In this case, we want to make the consequences of @{term cat_0} available in
+@{term cat_k}, so we need to prove the assumptions of @{term cat_0} in the
+context of @{term cat_k}. Thankfully, in @{term cat_k}, we can use the
+assumptions of @{term cat_k}, and @{text exists_0} follows easily from @{text
+k_min} and @{text k_max}.
+
+To interpret one locale within another, we use the \isacommand{sublocale}
+command:
 
 \<close>
+
+sublocale cat_k < cat_0
+  using k_min k_max by unfold_locales auto
 
 text \<open>
 
-We'll prove the assumptions by appealing to two other orderings of the complete
-set of hats. We'll use @{text view_0} as a step towards @{text view_n}. The latter
-is very close to the ordering used in the original specification of @{text hats},
-so we can easily prove the relevant properties of @{text view_n}
+We want to use @{text candidates_i}, but can't immediately satisfy the @{text
+distinct_view} and @{text set_view} premises of @{text candidate_i}, for cat
+@{text k}'s view. However, we notice that there is an ordering of the full set
+of hats which is a view for both cat @{text "0"} and cat @{text k}:
 
 \<close>
 
-abbreviation (in cat_0) (input) "view_n \<equiv> spare # assigned ! 0 # seen 0"
-abbreviation (in cat_0) (input) "view_0 \<equiv> rejected # spoken ! 0 # seen 0"
+abbreviation (in cat_0) (input) "view_r \<equiv> rejected # spoken ! 0 # seen 0"
 abbreviation (in cat_k) (input) "view_k \<equiv> rejected # heard k @ assigned ! k # seen k"
 
-lemma (in cat_0)
-  distinct_n: "distinct view_n" and
-  set_n: "set view_n = {0..length assigned}"
-  using distinct_hats assign
-  unfolding seen_def assigned_0
-  by auto
-
 text \<open>
 
-Ordering @{text view_0} is the same as @{text view_k}, but seen from the rearmost
-cat's perspective. We prove they are equal:
+We expect these lists should be equal, because:
+
+\begin{itemize}
+
+  \item the first thing that cat @{text k} would have @{text heard} was @{text
+  spoken}~@{text "!"}~@{text "0"}, and
+
+  \item under our @{term cat_k} assumptions, the rest of @{text view_k} is what
+  cat @{text 0} had @{text seen}.
+
+\end{itemize}
+
+This is interesting, because @{text view_r} gets us closer to @{text view_0},
+for which we have already proved the @{text candidates_i} premises. If we can
+show that:
+
+\begin{itemize}
+
+  \item @{text view_r} and @{text view_k} are equal, and that
+
+  \item the first two hats in @{text view_r} are the same as the first two in
+  @{text view_0},
+
+\end{itemize}
+
+then we are close to proving the @{text candidates_i} premises for @{text
+view_k}. We can prove the first of these:
 
 \<close>
 
@@ -478,7 +569,7 @@ lemmas (in cat_k) drop_maps =
   drop_map_nth[OF less_imp_le_nat, OF k_max]
   drop_map_nth[OF Suc_leI[OF exists_0]]
 
-lemma (in cat_k) view_eq: "view_0 = view_k"
+lemma (in cat_k) view_eq: "view_r = view_k"
   unfolding heard_k seen_def
   apply (simp add: k_max Cons_nth_drop_Suc drop_maps)
   apply (subst map_append[symmetric])
@@ -488,8 +579,7 @@ lemma (in cat_k) view_eq: "view_0 = view_k"
 
 text \<open>
 
-Now, to prove the relevant properties about @{text view_k}, we just need to
-prove them for @{text view_0}. But to do that, we need to know something
+But to do that, we need to know something
 about @{term "spoken ! 0"}. We haven't yet figured out how that choice is
 made, so we'll just assume it's one of the @{text candidates}:
 
@@ -499,9 +589,9 @@ locale cat_0_spoken = cat_0 +
   assumes spoken_candidate_0: "spoken ! 0 \<in> candidates 0"
 
 lemma (in cat_0_spoken)
-  distinct_0: "distinct view_0" and
-  set_0: "set view_0 = {0..length assigned}"
-  using spoken_candidate_0 distinct_n set_n
+  distinct_r: "distinct view_r" and
+  set_r: "set view_r = {0..length assigned}"
+  using spoken_candidate_0 distinct_0 set_0
   unfolding candidates_0 rejected_def
   by fastforce+
 
@@ -517,8 +607,7 @@ locale cat_k_view = cat_k + cat_0_spoken
 lemma (in cat_k_view)
   distinct_k: "distinct view_k" and
   set_k: "set view_k = {0..length assigned}"
-  using distinct_0 set_0 view_eq
-  by auto
+  using distinct_r set_r view_eq by auto
 
 lemma (in cat_k_view) candidates_k: "candidates k = {rejected, assigned ! k}"
   using candidates_i[OF k_max] distinct_k set_k by simp
@@ -721,19 +810,19 @@ lemma (in cat_0_parity) choices_0: "choices assigned ! 0 = choice [] (seen 0)"
 
 lemma (in cat_0_parity) parity_swap_0:
   "parity (spare # assigned ! 0 # seen 0) \<longleftrightarrow> \<not> parity (assigned ! 0 # spare # seen 0)"
-  using parity_swap_0_i[of spare "[]"] distinct_n by simp
+  using parity_swap_0_i[of spare "[]"] distinct_0 by simp
 
-lemma (in cat_0_parity) parity_0: "parity view_0"
-  using distinct_n parity_swap_0
+lemma (in cat_0_parity) parity_r: "parity view_r"
+  using distinct_0 parity_swap_0
   unfolding choices_0 choice_def candidates_excluding_0 rejected_def
   by auto
 
 lemma (in cat_k_parity) parity_k: "parity view_k"
-  using parity_0 view_eq by simp
+  using parity_r view_eq by simp
 
 lemma (in cat_0_parity) choice_0:
-  "choices assigned ! 0 = (if parity view_n then assigned ! 0 else spare)"
-  using distinct_n parity_swap_0
+  "choices assigned ! 0 = (if parity view_0 then assigned ! 0 else spare)"
+  using distinct_0 parity_swap_0
   unfolding choices_0 choice_def candidates_excluding_0
   by (subst sorted_list_of_set_distinct_pair) auto
 
