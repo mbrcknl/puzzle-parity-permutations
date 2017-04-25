@@ -436,24 +436,22 @@ section \<open>The rejected hat\<close>
 
 text \<open>
 
-We now return to cat $k$ of the @{term cat_k} locale.
-
-Since none of the cats $\setc{i}{0 \leq i < k}$ previously said $k$'s number,
-$k$'s own number is one of those candidates. Taking into account our assumption
-that all those $\setc{i}{0 < i < k}$ except the rearmost said their own
-numbers, we can also say that the other candidate will be the same number which
-the rearmost cat chose \emph{not} to call.
+We now return to cat $k$ of the @{term cat_k} locale. Since none of the cats
+$\setc{i}{0 \leq i < k}$ previously said $k$'s number, $k$'s own number must be
+one of its @{text candidates}. Taking into account our assumption that all
+those $\setc{i}{0 < i < k}$ except the rearmost said their own numbers, we can
+also say that the other candidate will be the same number which the rearmost
+cat chose \emph{not} to call.
 
 To solve the puzzle, we therefore just need to ensure that every cat $k$
 rejects the same number that the rearmost cat rejected. We'll call this the
 \emph{rejected} hat.
 
-To formalise this, we'll need to somehow define the rejected hat. We don't yet
-know how the cats choose their hats, but we can talk about their @{text
-candidates}.
-
-To do this for the rearmost cat, we first need to know that the rearmost cat
-exists, so let's make an assumption:
+To formalise this, we'll need to somehow define the rejected hat. We'll define
+the @{text rejected} hat in term of the choice made by cat @{text "0"}. We
+don't yet know how the cats choose their hats, but we can talk about their
+@{text candidates}. Before we can consider the rearmost cat, we first need to
+know that it exists, so let's make an assumption:
 
 \<close>
 
@@ -497,7 +495,6 @@ text \<open>
 
 We now want to prove that @{text candidates} @{text k} consists of @{text k}'s
 @{text assigned} hat, and the @{text rejected} hat, but there's a problem.
-
 Since we defined @{text rejected} in the @{term cat_0} locale, it is not
 currently visible in @{text cat_k}. To make it visible, we need to
 \emph{interpret} the @{term cat_0} locale in the context of @{term cat_k}.
@@ -675,6 +672,24 @@ where
     case sorted_list_of_set (candidates_excluding heard seen) of
       [a,b] \<Rightarrow> if (classify a heard b seen) then b else a"
 
+text \<open>
+
+We'll say more about the @{typ classifier} in the next section. First, we'll
+define a function which assembles the choices of all the cats into a list.
+We'll need this to instantiate the @{text spoken} parameter of the @{term cats}
+locale.
+
+We define the @{text choices} function in two steps. First, we recursively
+define @{text "choices'"}, taking two arguments: the numbers @{text heard} by
+the current cat; and the remaining @{text assigned} hats for the current cat
+and all cats towards the front. It recurses on the @{text assigned} hats, while
+building up the list of numbers @{text heard}. In the second case, we discard
+the hat @{text assigned} to the current cat, giving us exactly what is @{text
+seen} by the current cat, and which is also the remainder of the @{text
+assigned} hats for recursive call.
+
+\<close>
+
 primrec (in classifier)
   choices' :: "nat list \<Rightarrow> nat list \<Rightarrow> nat list"
 where
@@ -682,7 +697,38 @@ where
 | "choices' heard (_ # seen)
     = (let c = choice heard seen in c # choices' (heard @ [c]) seen)"
 
+text \<open>
+
+The @{text choices} function then specialises to the initial state where the
+rearmost cat begins having @{text heard} nothing:
+
+\<close>
+
 definition (in classifier) "choices \<equiv> choices' []"
+
+text \<open>
+
+We can prove, in two steps, that the number of @{text choices} is the same as
+the number of @{text assigned} hats:
+
+\<close>
+
+lemma (in classifier) choices'_length: "length (choices' heard assigned) = length assigned"
+  by (induct assigned arbitrary: heard) (auto simp: Let_def)
+
+lemma (in classifier) choices_length: "length (choices assigned) = length assigned"
+  by (simp add: choices_def choices'_length)
+
+text \<open>
+
+We can also prove that the individual @{text choices} are as we expect. The
+@{text choices} lemma is important, because it makes clear that the @{text
+choices} function does not cheat. It agrees with the @{text choice} function,
+which is given exactly the information available to the respective cat. We know
+that @{text choice} cannot cheat, because the @{text choices} lemma is
+parametric in the list of @{text assigned} hats.
+
+\<close>
 
 lemma (in classifier) choices':
   assumes "i < length assigned"
@@ -698,24 +744,21 @@ lemma (in classifier) choices:
   shows "spoken ! i = choice (take i spoken) (drop (Suc i) assigned)"
   using assms choices' by (simp add: choices_def)
 
-lemma (in classifier) choices'_length: "length (choices' heard assigned) = length assigned"
-  by (induct assigned arbitrary: heard) (auto simp: Let_def)
-
-lemma (in classifier) choices_length: "length (choices assigned) = length assigned"
-  by (simp add: choices_def choices'_length)
+section \<open>The classifier\<close>
 
 text \<open>
 
-The order in which we pass arguments to the @{typ classifier} is suggestive of
-one of the two possible orderings of the full set of hats consistent with what
-is @{text heard} and @{text seen} by the cat making the choice. We imagine hat
-@{text b} on the cat's head, between those it has @{text heard} and @{text
-seen}, and imagine hat @{text a} placed on the floor behind the rearmost cat,
-where no cat can see it.
+Like the views we used in the @{text candidates} lemmas, the order we pass
+arguments to the @{typ classifier} is suggestive of one of the two possible
+orderings of the full set of hats that is consistent with what was @{text
+heard} and @{text seen} by the cat making the @{typ choice}, with hat @{text b}
+in the position of the cat, and hat @{text a} on the floor behind the rearmost
+cat.
 
-The classifier then returns a @{typ bool} that indicates whether the given
-ordering should be accepted or rejected. If accepted, the cat calls the hat it
-had imagined on its own head. If rejected, it calls the other.
+Rather than return a hat number, the @{typ classifier} returns a @{typ bool}
+that indicates whether the given ordering should be accepted or rejected. If
+accepted, the cat says the number it had imagined in its place. If rejected, it
+says the other.
 
 Since there must always be exactly one correct call, we require that the
 classifier accepts an ordering if and only if it would reject the alternative:
@@ -733,11 +776,11 @@ text \<open>
 This means that we can say which is the accepted ordering, regardless of which
 ordering we actually passed to the classifier.
 
-Although its a small refinement from choice to classifier, it gives us a
-different way of looking at the problem. Instead of asking what is the correct
-hat number, which is different for each cat, we can consider orderings of the
-complete set of hats, and whether or not those orderings are consistent with
-the information available to \emph{all} of the cats.
+Although it's a small refinement from choice to classifier, it gives us a new
+way of looking at the problem. Instead of asking what is the correct hat
+number, which is different for each cat, we can consider orderings of the
+complete set of hats, and ask which is the ordering that is consistent with the
+information available to \emph{every} cat.
 
 In particular, we notice that for all but the rearmost cat to choose the
 correct hats, the accepted orderings must be the same for all cats. This is
@@ -747,8 +790,8 @@ to the rear, and will also be @{text heard} by all cats towards the front.
 Surprisingly, this is true even for the rearmost cat! The only thing special
 about the rearmost cat is that its assigned number is irrelevant. The task of
 the rearmost cat is not to guess its assigned number, but to inform the other
-cats which ordering is both consistent with the information they will have, and
-also accepted by the classifier.
+cats which ordering is both consistent with the information they will have when
+their turns come, and also accepted by their shared classifier.
 
 We can write down the required property that the accepted orderings must be
 consistent:
@@ -769,32 +812,42 @@ everything known to each cat. The lengths of the arguments @{text heard} and
 @{text seen} encode the cat's position in the line, so we even allow the
 classifier to behave differently for each cat.
 
-But the property @{term classifier_well_behaved} suggests that the position in
+But the property @{term classifier_consistent} suggests that the position in
 the line is redundant, and we can collapse the classifier's arguments into a
-single list.
+single list. We define a @{text parity_classifier} locale which specialises the
+@{typ classifier} function to one which does just this. It is based on the
+@{term classifier_swap} locale, so it inherits a specialised version of the
+@{text classifier_swap} assumption.
 
 \<close>
 
 type_synonym parity = "nat list \<Rightarrow> bool"
 
-locale parity_classifier =
-  fixes parity :: "parity"
-  assumes parity_swap_0_i:
-    "\<And>a heard b seen.
-      distinct (a # heard @ b # seen) \<Longrightarrow>
-        parity (a # heard @ b # seen) \<longleftrightarrow> \<not> parity (b # heard @ a # seen)"
+abbreviation (input)
+  "classifier_of_parity parity \<equiv> \<lambda>a heard b seen. parity (a # heard @ b # seen)"
 
-sublocale parity_classifier < classifier_consistent "\<lambda>a heard b seen. parity (a # heard @ b # seen)"
-  apply (unfold_locales)
-  apply (erule parity_swap_0_i)
-  by auto
+locale parity_classifier = classifier_swap "classifier_of_parity parity"
+  for parity :: "parity"
 
 text \<open>
 
-Based on the informal derivation so far, our claim is that any function
-satisfying @{text parity_correct} is sufficient to solve the puzzle. Let's
-first prove this is the case, and then finally, we'll derive a @{text parity}
-function.
+We can show that @{term parity_classifier} satisfies the @{text
+classifier_consistent} property, with a \isacommand{sublocale} proof, although
+we won't actually need this:
+
+\<close>
+
+sublocale parity_classifier < classifier_consistent "classifier_of_parity parity"
+  by unfold_locales simp
+
+section \<open>Solving the puzzle\<close>
+
+text \<open>
+
+Based on the informal derivation so far, our claim is that any @{typ parity}
+function satisfying @{text classifier_swap} is sufficient to solve the puzzle.
+Let's first prove this is the case, and then finally, we'll derive a @{typ
+parity} function.
 
 \<close>
 
@@ -820,7 +873,7 @@ lemma (in cat_0_parity) choices_0: "choices assigned ! 0 = choice [] (seen 0)"
 
 lemma (in cat_0_parity) parity_swap_0:
   "parity (spare # assigned ! 0 # seen 0) \<longleftrightarrow> \<not> parity (assigned ! 0 # spare # seen 0)"
-  using parity_swap_0_i[of spare "[]"] distinct_0 by simp
+  using classifier_swap[of spare "[]"] distinct_0 by simp
 
 lemma (in cat_0_parity) parity_r: "parity view_r"
   using distinct_0 parity_swap_0
@@ -850,7 +903,7 @@ lemma (in cat_k_parity) candidates_excluding_k:
   using candidates_k unfolding candidates_def by simp
 
 lemma (in cat_k_parity) choice_k: "choices assigned ! k = assigned ! k"
-  using parity_swap_0_i[OF distinct_k] distinct_k parity_k
+  using classifier_swap[OF distinct_k] distinct_k parity_k
   unfolding choices_k choice_def candidates_excluding_k
   by (subst sorted_list_of_set_distinct_pair) auto
 
