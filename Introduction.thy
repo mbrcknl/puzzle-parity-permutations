@@ -814,10 +814,12 @@ classifier to behave differently for each cat.
 
 But the property @{term classifier_consistent} suggests that the position in
 the line is redundant, and we can collapse the classifier's arguments into a
-single list. We define a @{text parity_classifier} locale which specialises the
-@{typ classifier} function to one which does just this. It is based on the
-@{term classifier_swap} locale, so it inherits a specialised version of the
-@{text classifier_swap} assumption.
+single list. We define a @{text parity_classifier} locale which does just this.
+It is a specialisation of the @{term classifier_swap} locale, in which we
+instantiate the @{text classify} parameter with a classifier based on an
+arbitrary but fixed @{text parity} function. As a specialisation of the @{term
+classifier} locale, @{text parity_classifier} assumes a specialised version of
+@{text classifier_swap}.
 
 \<close>
 
@@ -832,8 +834,9 @@ locale parity_classifier = classifier_swap "classifier_of_parity parity"
 text \<open>
 
 We can show that @{term parity_classifier} satisfies the @{text
-classifier_consistent} property, with a \isacommand{sublocale} proof, although
-we won't actually need this:
+classifier_consistent} requirement, with a \isacommand{sublocale} proof. This
+means that the only thing we require of our @{typ parity} function is that it
+satisfies the @{text classifier_swap} property.
 
 \<close>
 
@@ -849,9 +852,23 @@ function satisfying @{text classifier_swap} is sufficient to solve the puzzle.
 Let's first prove this is the case, and then finally, we'll derive a @{typ
 parity} function.
 
+First, we need a locale which combines @{term hats} and @{term
+parity_classifier}:
+
 \<close>
 
 locale hats_parity = hats + parity_classifier
+
+text \<open>
+
+Previously, in the @{term cats} locale and its decendents, we had to take the
+numbers @{text spoken} by the cats as a locale parameter, since we did not know
+how they made their choices. Now, we want to instantiate this parameter with
+@{text choices} @{text assigned}, so we'll make a fresh batch of locales which
+do this. We'll also discharge the @{term cats} locale assumption for this
+instantiation, with a \isacommand{sublocale} proof:
+
+\<close>
 
 sublocale hats_parity < cats spare assigned "choices assigned"
   using choices_length by unfold_locales
@@ -864,24 +881,40 @@ locale cat_k_parity = cat_0_parity spare assigned parity
   + cat_k spare assigned "choices assigned" k
   for spare assigned parity k
 
-lemma (in cat_0_parity) candidates_excluding_0:
+text \<open>
+
+The following are just restatements of things we've already proved, but in
+terms slightly more convenient for the proofs further on.
+
+\<close>
+
+lemma (in cat_0) candidates_excluding_0:
   "candidates_excluding [] (seen 0) = {spare, assigned ! 0}"
   using candidates_0 unfolding candidates_def heard_def take_0 by simp
 
-lemma (in cat_0_parity) choices_0: "choices assigned ! 0 = choice [] (seen 0)"
-  using choices[OF exists_0] unfolding seen_def by simp
+lemma (in cat_k_view) candidates_excluding_k:
+  "candidates_excluding (heard k) (seen k) = {rejected, assigned ! k}"
+  using candidates_k unfolding candidates_def by simp
 
 lemma (in cat_0_parity) parity_swap_0:
   "parity (spare # assigned ! 0 # seen 0) \<longleftrightarrow> \<not> parity (assigned ! 0 # spare # seen 0)"
   using classifier_swap[of spare "[]"] distinct_0 by simp
 
-lemma (in cat_0_parity) parity_r: "parity view_r"
-  using distinct_0 parity_swap_0
-  unfolding choices_0 choice_def candidates_excluding_0 rejected_def
-  by auto
+lemma (in cat_0_parity) choices_0: "choices assigned ! 0 = choice [] (seen 0)"
+  using choices[OF exists_0] unfolding seen_def by simp
 
-lemma (in cat_k_parity) parity_k: "parity view_k"
-  using parity_r view_eq by simp
+lemma (in cat_k_parity) choices_k:
+  "choices assigned ! k = choice (heard k) (seen k)"
+  unfolding heard_def seen_def using choices[OF k_max] by simp
+
+text \<open>
+
+Since cat @{text "0"} uses the @{typ parity} function to make its choice, we
+can prove a couple of results about how its choice relates to @{text view_0}
+and @{text view_r}. Note that the @{typ parity} of @{text view_r} is always
+true!
+
+\<close>
 
 lemma (in cat_0_parity) choice_0:
   "choices assigned ! 0 = (if parity view_0 then assigned ! 0 else spare)"
@@ -889,35 +922,82 @@ lemma (in cat_0_parity) choice_0:
   unfolding choices_0 choice_def candidates_excluding_0
   by (subst sorted_list_of_set_distinct_pair) auto
 
+lemma (in cat_0_parity) parity_r: "parity view_r"
+  using distinct_0 parity_swap_0
+  unfolding choices_0 choice_def candidates_excluding_0 rejected_def
+  by auto
+
+text \<open>
+
+Since @{text view_r} and @{text view_k} are equal, we also have that @{typ
+parity} @{text view_k} is always true:
+
+\<close>
+
+lemma (in cat_k_parity) parity_k: "parity view_k"
+  using parity_r view_eq by simp
+
+text \<open>
+
+At long last, we are almost ready to prove in @{term cat_k_parity} that cat
+@{text k} makes the right choice! But first, we need to make certain results
+about @{text view_k} available in the @{term cat_k_parity} locale. As usual,
+we'll use a sublocale proof:
+
+\<close>
+
 sublocale cat_k_parity < cat_k_view spare assigned "choices assigned" k
   apply unfold_locales
   unfolding choice_0 candidates_0
   by simp
-
-lemma (in cat_k_parity) choices_k:
-  "choices assigned ! k = choice (heard k) (seen k)"
-  unfolding heard_def seen_def using choices[OF k_max] by simp
-
-lemma (in cat_k_parity) candidates_excluding_k:
-  "candidates_excluding (heard k) (seen k) = {rejected, assigned ! k}"
-  using candidates_k unfolding candidates_def by simp
 
 lemma (in cat_k_parity) choice_k: "choices assigned ! k = assigned ! k"
   using classifier_swap[OF distinct_k] distinct_k parity_k
   unfolding choices_k choice_def candidates_excluding_k
   by (subst sorted_list_of_set_distinct_pair) auto
 
+text \<open>
+
+Recall that our induction proof, @{text cat_k_induct}, showed that if every cat
+satisfying @{term cat_k} says the correct number, then every cat except the
+rearmost says the correct number. We've just shown that every cat satisfying
+@{term cat_k_parity} says the correct number, so to apply the induction lemma,
+we need to show that every cat satisfying @{term cat_k} also satisfies @{term
+cat_k_parity}. The only undischarged assumptions in @{term cat_k_parity},
+relative to to @{term cat_k}, are the ones we make in @{term hats_parity}, so
+this implication is easy to prove in @{term hats_parity}:
+
+\<close>
+
 lemma (in hats_parity) cat_k_cat_k_parity:
   assumes "cat_k spare assigned (choices assigned) k"
   shows "cat_k_parity spare assigned parity k"
   proof -
-    interpret cat_k spare assigned "choices assigned" k using assms by simp
+    interpret cat_k spare assigned "choices assigned" k by (rule assms)
     show ?thesis by unfold_locales
   qed
+
+text \<open>
+
+Finally, using our induction lemma, we get that in @{term hats_parity}, every
+cat except the rearmost says its assigned hat number.
+
+\<close>
 
 lemma (in hats_parity) choices_correct:
   "k \<in> {1..<length assigned} \<Longrightarrow> choices assigned ! k = assigned ! k"
   by (rule cat_k_induct[OF cat_k_parity.choice_k, OF cat_k_cat_k_parity])
+
+section \<open>Legalities\<close>
+
+text \<open>
+
+There are a couple of rules which we've observed in our formal analysis, but
+for which we, so far, have no proof: every cat must say the number of some hat,
+and every cat must say a distinct number. We present the proofs without further
+comment.
+
+\<close>
 
 lemma (in cats) distinct_pointwise:
   assumes "i < length assigned"
