@@ -1038,11 +1038,39 @@ lemma (in hats_parity) choices_legal:
   using choices_length choice_legal subsetI in_set_conv_nth
   by metis
 
-section \<open>The parity function\<close>
+section \<open>Deriving the parity function\<close>
 
-text \<open>Define the parity of a list @{term xs} as the evenness of the number of inversions.
-      Count an inversion for every pair of indices @{term i} and @{term j}, such that
-      @{text "i < j"}, but @{text "xs!i > xs!j"}.\<close>
+text \<open>
+
+We have come a long way, but there is still one thing we need: a @{typ parity}
+function which satisfies the @{text classifier_swap} property. Informally, the
+property requires that if we take a list of distinct naturals, and swap the
+\emph{first} number with \emph{any other number}, then the @{typ parity} is
+inverted.
+
+If we had such a function, what other properties must it have? What happens to
+the @{term parity} when we swap \emph{any} two elements? By performing a
+sequence of three swaps, we derive the following property. We see that we
+actually require that if we swap \emph{any two elements}, then the @{typ
+parity} is inverted.
+
+\<close>
+
+lemma (in parity_classifier) parity_swap_any:
+  assumes "distinct (as @ b # cs @ d # es)"
+  shows "parity (as @ b # cs @ d # es) \<longleftrightarrow> \<not> parity (as @ d # cs @ b # es)"
+  proof (cases as)
+    case Nil thus ?thesis using assms classifier_swap[of b] by simp
+  next
+    case (Cons a as)
+    hence "parity (a # as @ b # cs @ d # es) \<longleftrightarrow> \<not> parity (b # as @ a # cs @ d # es)"
+      using assms classifier_swap[of a as b "cs @ d # es"] by simp
+    hence "parity (a # as @ b # cs @ d # es) \<longleftrightarrow> parity (d # as @ a # cs @ b # es)"
+      using Cons assms classifier_swap[of b "as @ a # cs" d es] by simp
+    hence "parity (a # as @ b # cs @ d # es) \<longleftrightarrow> \<not> parity (a # as @ d # cs @ b # es)"
+      using Cons assms classifier_swap[of d as a "cs @ b # es"] by simp
+    then show ?thesis using Cons by simp
+  qed
 
 primrec
   parity :: "nat list \<Rightarrow> bool"
