@@ -1050,7 +1050,7 @@ inverted.
 
 If we had such a function, what other properties must it have? What happens to
 the @{term parity} when we swap \emph{any} two elements? By performing a
-sequence of three swaps, we derive the following property. We see that we
+sequence of three swaps, we derive the following property. This means that we
 actually require that if we swap \emph{any two elements}, then the @{typ
 parity} is inverted.
 
@@ -1071,6 +1071,24 @@ lemma (in parity_classifier) parity_swap_any:
       using Cons assms classifier_swap[of d as a "cs @ b # es"] by simp
     then show ?thesis using Cons by simp
   qed
+
+text \<open>
+
+How might we construct such a function? Let's start small, and restrict our
+attention to lists of exactly 2 distinct elements. There are only two ways to
+order these elements, and four possible functions giving a @{typ bool} result,
+only two of which satisfy the @{text classifier_swap}  property. The choice is
+arbitrary, so we'll choose the one that checks that the elements are in
+ascending order.
+
+\<close>
+
+definition "parity_of_two xs \<equiv> case xs of [a,b] \<Rightarrow> a \<le> b"
+
+text \<open>
+
+
+\<close>
 
 primrec
   parity :: "nat list \<Rightarrow> bool"
