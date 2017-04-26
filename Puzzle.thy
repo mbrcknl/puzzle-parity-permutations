@@ -1,5 +1,5 @@
 (*<*)
-theory Introduction
+theory Puzzle
 imports "lib/Lib"
 begin
 (*>*)
@@ -1039,6 +1039,93 @@ lemma (in hats_parity) choices_legal:
   by metis
 
 section \<open>The parity function\<close>
+
+text \<open>Define the parity of a list @{term xs} as the evenness of the number of inversions.
+      Count an inversion for every pair of indices @{term i} and @{term j}, such that
+      @{text "i < j"}, but @{text "xs!i > xs!j"}.\<close>
+
+primrec
+  parity :: "nat list \<Rightarrow> bool"
+where
+  "parity [] = True"
+| "parity (x # ys) = (parity ys = even (length [y \<leftarrow> ys. x > y]))"
+
+text \<open>In a list that is sufficiently distinct, swapping any two elements inverts
+      the @{term parity}.\<close>
+
+lemma parity_swap_adj:
+  "b \<noteq> c \<Longrightarrow> parity (as @ b # c # ds) \<longleftrightarrow> \<not> parity (as @ c # b # ds)"
+  by (induct as) auto
+
+lemma parity_swap:
+  assumes "b \<noteq> d \<and> b \<notin> set cs \<and> d \<notin> set cs"
+  shows "parity (as @ b # cs @ d # es) \<longleftrightarrow> \<not> parity (as @ d # cs @ b # es)"
+  using assms
+  proof (induct cs arbitrary: as)
+    case Nil thus ?case using parity_swap_adj[of b d as es] by simp
+  next
+    case (Cons c cs) show ?case
+      using parity_swap_adj[of b c as "cs @ d # es"]
+            parity_swap_adj[of d c as "cs @ b # es"]
+            Cons(1)[where as="as @ [c]"] Cons(2)
+      by simp
+  qed
+
+section \<open>Top-level theorems\<close>
+
+global_interpretation parity_classifier parity
+  using parity_swap[where as="[]"] by unfold_locales simp
+
+sublocale hats < hats_parity spare assigned parity
+  by unfold_locales
+
+context
+  fixes spare assigned
+  assumes assign: "set (spare # assigned) = {0 .. length assigned}"
+begin
+  interpretation hats using assign by unfold_locales
+  lemmas choices_legal = choices_legal
+  lemmas choices_distinct = choices_distinct
+  lemmas choices_correct = choices_correct
+end
+
+(*<*)
+thm choices choices_legal choices_distinct choices_correct
+(*>*)
+
+text \<open>
+
+We have four top-level theorems which show that we have solved the puzzle.
+The first shows that we have not cheated:
+
+\begin{center}
+@{thm[mode=Rule] choices[no_vars]}
+\end{center}
+
+We don't need to look at the implementation of @{term choices} or @{term choice}
+to know this! The theorem is parametric in the set of @{text spare} and @{text
+assigned} hats, so the @{term choice} function can only use what appears in its
+arguments. Even if @{term choices} cheats, it agrees with @{term choice}, which
+cannot.
+
+The next two show that the @{text choices} are legal. That is, every cat chooses
+the number of some hat, and no number is repeated:
+
+\begin{center}
+@{thm[mode=Rule] choices_legal[no_vars]}
+\end{center}
+
+\begin{center}
+@{thm[mode=Rule] choices_distinct[no_vars]}
+\end{center}
+
+Finally, every cat except the rearmost chooses the number of its assigned hat:
+
+\begin{center}
+@{thm[mode=Rule] choices_correct[no_vars]}
+\end{center}
+
+\<close>
 
 (*<*)
 end

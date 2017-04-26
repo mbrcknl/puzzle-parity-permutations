@@ -8,10 +8,9 @@ session Puzzle = HOL +
     "lib/LaTeX_Rule_Sugar"
     "lib/Lib"
   theories
-    "Introduction"
-    "Parity_Swap"
-    "Conclusion"
+    "Puzzle"
   theories [document=false]
+    "extras/Parity_Swap"
     "extras/Puzzle_Bottom_Up"
     "extras/Parity_Inversions"
     "extras/Parity_Extras"

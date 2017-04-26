@@ -1,10 +1,8 @@
-subsection \<open>Parity of a list permutation\<close>
+section \<open>Parity of a list permutation\<close>
 
-(*<*)
 theory Parity_Swap
-imports "lib/Lib"
+imports "../lib/Lib"
 begin
-(*>*)
 
 text \<open>Define the parity of a list @{term xs} as the evenness of the number of inversions.
       Count an inversion for every pair of indices @{term i} and @{term j}, such that
@@ -37,6 +35,4 @@ lemma parity_swap:
       by simp
   qed
 
-(*<*)
 end
-(*>*)

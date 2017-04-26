@@ -1,10 +1,8 @@
-subsection \<open>Solving the puzzle\<close>
+section \<open>Solving the puzzle\<close>
 
-(*<*)
 theory Puzzle_Bottom_Up
-imports "../Parity_Swap" "../lib/Lib"
+imports Parity_Swap "../lib/Lib"
 begin
-(*>*)
 
 subsubsection \<open>Individual choice function\<close>
 
@@ -231,6 +229,4 @@ lemma choices_distinct: "distinct (choices assigned)"
 
 end
 
-(*<*)
 end
-(*>*)

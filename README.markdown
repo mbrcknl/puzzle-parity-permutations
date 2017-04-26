@@ -11,6 +11,23 @@ other communication. Although the first call is allowed to be wrong, the
 remaining cats always call out the numbers on their own hats.
 
 How do they do this? `Puzzle.thy` has the answer, with a proof in
-[Isabelle/HOL][].
+[Isabelle/HOL][]. There is a PDF rendering of the entire proof, with detailed
+commentary, in the `document` folder.
+
+The `extras` folder contains miscellaneous proofs, including:
+
+- a more direct, bottom-up version of the main proof, in
+  `Puzzle_Bottom_Up.thy`.
+- a proof that the `parity` function calculates the evenness of the number of
+  inversions, in `Parity_Inversions.thy`.
+- a proof that `parity` can be calculated as a side-effect of a merge sort,
+  in `Parity_Merge_Sort.thy`.
+
+The `lib` folder contains:
+
+- A handful of lemmas about lists and sets, in `Lib.thy`.
+- Some syntax for presenting theorems in rule format, in
+  `LaTeX_Rule_Sugar.thy`. This was taken from the Isabelle/HOL distribution,
+  which has a BSD-style license.
 
 [Isabelle/HOL]: https://isabelle.in.tum.de/
