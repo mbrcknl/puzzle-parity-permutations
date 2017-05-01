@@ -14,10 +14,11 @@
   \node[od] (n132) at ($(n312)+(120:2.3cm)$) {1$\cdot$3$\cdot$2\\1};
 
   \path[lt] (n123) edge (n213);
-  \path[rt] (n213) edge (n231);
   \path[lt] (n231) edge (n321);
-  \path[rt] (n321) edge (n312);
   \path[lt] (n312) edge (n132);
+
+  \path[rt] (n213) edge (n231);
+  \path[rt] (n321) edge (n312);
   \path[rt] (n132) edge (n123);
 
   \path[ou] (n123) edge (n321);
