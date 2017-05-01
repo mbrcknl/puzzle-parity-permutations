@@ -818,8 +818,8 @@ single list. We define a @{text parity_classifier} locale which does just this.
 It is a specialisation of the @{term classifier_swap} locale, in which we
 instantiate the @{text classify} parameter with a classifier based on an
 arbitrary but fixed @{text parity} function. As a specialisation of the @{term
-classifier} locale, @{text parity_classifier} assumes a specialised version of
-@{text classifier_swap}.
+classifier_swap} locale, @{text parity_classifier} assumes a specialised
+version of @{text classifier_swap}.
 
 \<close>
 
@@ -1094,7 +1094,18 @@ of three distinct elements. There are six ways of ordering the inputs, and 64
 possible functions to @{typ bool}, but surprisingly, there are still only two
 mutually inverse functions that satisfy the @{text classifier_swap} property!
 We won't formalise this claim, but we can understand it by laying out the six
-permutations in a graph, and drawing an edge for each swap of two elements.
+permutations in a graph, as in figure~\ref{fig:permute-3}. Each node shows one
+of the possible orderings of the digits $1$ to $3$ at the top. Solid connecting
+lines indicate swaps of the leftmost two digits; dashed lines indicate swaps of
+the rightmost two digits; and dotted lines indicate swaps of the outermost two
+digits.
+
+\begin{figure}
+\centering
+\include{permute-3}
+\caption{Permutations of three elements.}
+\label{fig:permute-3}
+\end{figure}
 
 \<close>
 

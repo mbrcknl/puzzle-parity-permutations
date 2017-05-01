@@ -1,0 +1,27 @@
+\begin{tikzpicture}
+  [ ev/.style={circle, semithick, draw=black, fill=white, text=black, align=center}
+  , od/.style={circle, semithick, draw=black, fill=black, text=white, align=center}
+  , lt/.style={<->, >=stealth, semithick}
+  , rt/.style={<->, >=stealth, densely dashed, semithick}
+  , ou/.style={<->, >=stealth, densely dotted, semithick, bend left=10}
+  ]
+
+  \node[ev] (n123) {1$\cdot$2$\cdot$3\\0};
+  \node[od] (n213) at ($(n123)+(000:2.3cm)$) {2$\cdot$1$\cdot$3\\1};
+  \node[ev] (n231) at ($(n213)+(300:2.3cm)$) {2$\cdot$3$\cdot$1\\2};
+  \node[od] (n321) at ($(n231)+(240:2.3cm)$) {3$\cdot$2$\cdot$1\\3};
+  \node[ev] (n312) at ($(n321)+(180:2.3cm)$) {3$\cdot$1$\cdot$2\\2};
+  \node[od] (n132) at ($(n312)+(120:2.3cm)$) {1$\cdot$3$\cdot$2\\1};
+
+  \path[lt] (n123) edge (n213);
+  \path[rt] (n213) edge (n231);
+  \path[lt] (n231) edge (n321);
+  \path[rt] (n321) edge (n312);
+  \path[lt] (n312) edge (n132);
+  \path[rt] (n132) edge (n123);
+
+  \path[ou] (n123) edge (n321);
+  \path[ou] (n312) edge (n213);
+  \path[ou] (n231) edge (n132);
+
+\end{tikzpicture}

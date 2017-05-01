@@ -17,3 +17,4 @@ session Puzzle = HOL +
     "extras/Parity_Merge_Sort"
   document_files
     "root.tex"
+    "permute-3.tex"
