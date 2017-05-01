@@ -1042,17 +1042,18 @@ section \<open>Deriving the parity function\<close>
 
 text \<open>
 
-We have come a long way, but there is still one thing we need: a @{typ parity}
-function which satisfies the @{text classifier_swap} property. Informally, the
-property requires that if we take a list of distinct naturals, and swap the
-\emph{first} number with \emph{any other number}, then the @{typ parity} is
-inverted.
+We have come a long way, but there is still one missing piece of the puzzle: a
+@{typ parity} function which satisfies the @{text classifier_swap} property.
+Informally, the property requires that if we take a list of distinct naturals,
+and swap the \emph{first} number with \emph{any other number}, then the @{typ
+parity} is inverted.
 
 If we had such a function, what other properties must it have? What happens to
 the @{term parity} when we swap \emph{any} two elements? By performing a
-sequence of three swaps, we derive the following property. This means that we
-actually require that if we swap \emph{any two elements}, then the @{typ
-parity} is inverted.
+sequence of three swaps with the first element, we can get the effect of an
+arbitrary swap, and derive the following property. This means that we actually
+require that if we swap \emph{any} two elements, then the @{typ parity} is
+inverted.
 
 \<close>
 
@@ -1074,12 +1075,13 @@ lemma (in parity_classifier) parity_swap_any:
 
 text \<open>
 
-How might we construct such a function? Let's start small, and restrict our
-attention to lists of exactly 2 distinct elements. There are only two ways to
-order these elements, and four possible functions giving a @{typ bool} result,
-only two of which satisfy the @{text classifier_swap}  property. The choice is
-arbitrary, so we'll choose the one that checks that the elements are in
-ascending order.
+How might we construct such a function? Let's start small, and consider only
+lists of exactly two distinct elements. There are only two ways to order the
+elements, and four functions to a @{typ bool} result. Two of those are constant
+functions which don't satisfy the @{text classifier_swap} property. One of the
+non-constant functions tests whether the numbers are in ascending order, and
+the other, descending order. They are mutual inverse, and both satisfy @{text
+classifier_swap}. We arbitrarily choose the first:
 
 \<close>
 
@@ -1087,6 +1089,12 @@ definition "parity_of_two xs \<equiv> case xs of [a,b] \<Rightarrow> a \<le> b"
 
 text \<open>
 
+We don't gain much by formalising this any further, so let's move on to lists
+of three distinct elements. There are six ways of ordering the inputs, and 64
+possible functions to @{typ bool}, but surprisingly, there are still only two
+mutually inverse functions that satisfy the @{text classifier_swap} property!
+We won't formalise this claim, but we can understand it by laying out the six
+permutations in a graph, and drawing an edge for each swap of two elements.
 
 \<close>
 
