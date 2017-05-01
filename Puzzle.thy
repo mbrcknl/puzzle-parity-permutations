@@ -1119,7 +1119,7 @@ elements, there are three comparisons we can perform, and for $n$ elements,
 $\binom{n}{2}$ comparisons.\footnote{The \emph{binomial coefficient},
 $\binom{n}{k} = \frac{n!}{k!(n-k)!}$ is the number of ways one can choose $k$
 things from $n$ things.} If we are to use comparisons to calculate the @{text
-parity}, we need to combine many @{typ bool} results into one.
+parity}, we need to find a way to combine many @{typ bool} results into one.
 
 In figure~\ref{fig:permute-3}, the number at the bottom of each node counts the
 number of \emph{inversions} in the list. An inversion occurs when a list
@@ -1129,9 +1129,9 @@ but the pair 2$\cdot$3 is not. We notice that all the white nodes have an even
 number of inversions, and the black nodes have an odd number of inversions.
 
 So perhaps we can define the @{typ parity} by counting the number of
-inversions. We'll use @{term True} to denote an even number of inversions, and
-@{term False} for an odd number of inversions. This seems plausible, because
-when we swap two numbers within a distinct list:
+inversions, and defining the @{typ parity} as whether or not the total number
+of inversions is even. This seems plausible, because when we swap two numbers
+within a distinct list:
 
 \begin{itemize}
 
@@ -1175,7 +1175,22 @@ this by induction over the list preceding the first element being swapped.
 
 lemma parity_swap_adj:
   "b \<noteq> c \<Longrightarrow> parity (as @ b # c # ds) \<longleftrightarrow> \<not> parity (as @ c # b # ds)"
-  by (induct as) auto
+  proof (induct as)
+    case Nil
+    -- "In the @{text Nil} case, the @{term parity} function application simplifies away,"
+    -- "because @{term b} and @{term c} are at the head of the list."
+    thus "parity ([] @ b # c # ds) \<longleftrightarrow> \<not> parity ([] @ c # b # ds)"
+      by auto
+  next
+    case (Cons a as)
+    -- "In the @{text Cons} case, @{term b} and @{term c} are not at the head of the list, so we can't simplify directly."
+    -- "However, we get the following from the induction hypothesis."
+    hence "parity (as @ b # c # ds) \<longleftrightarrow> \<not> parity (as @ c # b # ds)"
+      by simp
+    -- "Using the induction hypothesis, we can now prove the @{text Cons} case by simplification."
+    thus "parity ((a # as) @ b # c # ds) \<longleftrightarrow> \<not> parity ((a # as) @ c # b # ds)"
+      by auto
+  qed
 
 lemma parity_swap:
   assumes "b \<noteq> d \<and> b \<notin> set cs \<and> d \<notin> set cs"
