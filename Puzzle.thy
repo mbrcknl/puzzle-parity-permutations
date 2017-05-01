@@ -1110,29 +1110,68 @@ If we choose a node, and assign it an arbitrary @{text parity}, then the @{text
 parity_swap_any} property tells us that we must assign the opposite @{text
 parity} to any node at the other end of a shared edge. We can continue
 traversing edges this way, and find that every parity is determined by our
-initial arbitrary choice. In the figure, we represent @{term True} (or
-\emph{even}) @{text parity} with a white fill, and @{term False} (or
-\emph{odd}) @{text parity} with a black fill.
+initial arbitrary choice. In the figure, we represent a @{typ parity} which is
+@{term True} with a white fill, and @{term False} with a black fill.
 
 Before we can extend this to lists of any length, we need to identify the
 pattern. For a list of length two, we performed a single comparison. With three
 elements, there are three comparisons we can perform, and for $n$ elements,
-$\binom{n}{2}$ comparisons.\footnote{The \emph{binomial coefficient}
+$\binom{n}{2}$ comparisons.\footnote{The \emph{binomial coefficient},
 $\binom{n}{k} = \frac{n!}{k!(n-k)!}$ is the number of ways one can choose $k$
-things from $n$ things.}
+things from $n$ things.} If we are to use comparisons to calculate the @{text
+parity}, we need to combine many @{typ bool} results into one.
 
-TODO
+In figure~\ref{fig:permute-3}, the number at the bottom of each node counts the
+number of \emph{inversions} in the list. An inversion occurs when a list
+element is greater than some other element to the right of it. For example, in
+the list 2$\cdot$3$\cdot$1, the pairs 2$\cdot$1 and 3$\cdot$1 are inversions,
+but the pair 2$\cdot$3 is not. We notice that all the white nodes have an even
+number of inversions, and the black nodes have an odd number of inversions.
+
+So perhaps we can define the @{typ parity} by counting the number of
+inversions. We'll use @{term True} to denote an even number of inversions, and
+@{term False} for an odd number of inversions. This seems plausible, because
+when we swap two numbers within a distinct list:
+
+\begin{itemize}
+
+  \item The swapped pair itself will change the number of inversions by one.
+
+  \item The change in the number of inversions caused by moving one of the pair
+  over the intervening numbers will be odd if and only the change caused by the
+  other is also odd.
+
+\end{itemize}
+
+\<close>
+
+section \<open>Defining the parity function\<close>
+
+text \<open>
+
+We are now ready to write a recursive definition of a @{typ parity} function!
+For the base case, we choose @{term True} as the @{typ parity} of an empty
+list. For the recursive case, we calculate the @{typ parity} of the tail, and
+also the number of inversions between the head and the tail. If both of these
+are odd, then the overall @{typ parity} is even. Likewise, if both are even.
+However, if one is even and the other is odd, then the overall @{term parity}
+is odd.
 
 \<close>
 
 primrec
-  parity :: "nat list \<Rightarrow> bool"
+  parity :: "parity"
 where
   "parity [] = True"
 | "parity (x # ys) = (parity ys = even (length [y \<leftarrow> ys. x > y]))"
 
-text \<open>In a list that is sufficiently distinct, swapping any two elements inverts
-      the @{term parity}.\<close>
+text \<open>
+
+We can prove that swapping two adjacent elements inverts the parity. Since the
+function performs a pattern match at the head of the list argument, we prove
+this by induction over the list preceding the first element being swapped.
+
+\<close>
 
 lemma parity_swap_adj:
   "b \<noteq> c \<Longrightarrow> parity (as @ b # c # ds) \<longleftrightarrow> \<not> parity (as @ c # b # ds)"
