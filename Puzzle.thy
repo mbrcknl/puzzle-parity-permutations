@@ -861,7 +861,7 @@ locale hats_parity = hats + parity_classifier
 
 text \<open>
 
-Previously, in the @{term cats} locale and its decendents, we had to take the
+Previously, in the @{term cats} locale and its descendents, we had to take the
 numbers @{text spoken} by the cats as a locale parameter, since we did not know
 how they made their choices. Now, we want to instantiate this parameter with
 @{text choices} @{text assigned}, so we'll make a fresh batch of locales which
@@ -1102,7 +1102,7 @@ rightmost two digits, and dotted lines for the outermost two digits.
 \begin{figure}
 \centering
 \include{permute-3}
-\caption{Permutations of three elements.}
+\caption{Permutations of three elements, by swaps of pairs.}
 \label{fig:permute-3}
 \end{figure}
 
@@ -1154,7 +1154,7 @@ For the base case, we choose @{term True} as the @{typ parity} of an empty
 list. For the recursive case, we calculate the @{typ parity} of the tail, and
 also the number of inversions between the head and the tail. If both of these
 are odd, then the overall @{typ parity} is even. Likewise, if both are even.
-However, if one is even and the other is odd, then the overall @{term parity}
+However, if one is even and the other is odd, then the overall @{typ parity}
 is odd.
 
 \<close>
@@ -1235,56 +1235,85 @@ lemma parity_swap:
 
 section \<open>Top-level theorems\<close>
 
+text \<open>
+
+We now have what we need to discharge our remaining assumptions. By performing
+a \isacommand{global\_interpretation} of the @{term parity_classifier} locale,
+specialised using our concrete @{term parity} function, we make all the
+theorems and definitions of that locale available globally:
+
+\<close>
+
 global_interpretation parity_classifier parity
   using parity_swap[where as="[]"] by unfold_locales simp
 
+text \<open>
+
+By interpreting the @{term hats_parity}, specialised using our concrete @{term
+parity} function, within the @{term hats} locale, we make all the theorems of
+@{term hats_parity} available in the @{term hats} locale:
+
+\<close>
+
 sublocale hats < hats_parity spare assigned parity
   by unfold_locales
+
+text \<open>
+
+We can then plumb the important theorems into the global context, by locally
+assuming the same things as the @{term hats} locale:
+
+\<close>
 
 context
   fixes spare assigned
   assumes assign: "set (spare # assigned) = {0 .. length assigned}"
 begin
   interpretation hats using assign by unfold_locales
-  lemmas choices_legal = choices_legal
-  lemmas choices_distinct = choices_distinct
-  lemmas choices_correct = choices_correct
+  lemmas legal = choices_legal
+  lemmas distinct = choices_distinct
+  lemmas correct = choices_correct
 end
-
 (*<*)
-thm choices choices_legal choices_distinct choices_correct
+thm choices legal distinct correct
 (*>*)
 
 text \<open>
 
-We have four top-level theorems which show that we have solved the puzzle.
-The first shows that we have not cheated:
+We now have four top-level theorems which show that we have solved the puzzle.
+We'll present them in the traditional \emph{rule} format, with premises above
+the line, and conclusions below the line. The first shows that we have not
+cheated:
 
 \begin{center}
 @{thm[mode=Rule] choices[no_vars]}
+{\sc choices}
 \end{center}
 
-We don't need to look at the implementation of @{term choices} or @{term choice}
-to know this! The theorem is parametric in the set of @{text spare} and @{text
-assigned} hats, so the @{term choice} function can only use what appears in its
-arguments. Even if @{term choices} cheats, it agrees with @{term choice}, which
-cannot.
+We don't need to look at the implementation of @{term choices} or @{term
+choice} to know this! The theorem is parametric in the set of @{text spare} and
+@{text assigned} hats, so the @{term choice} function can only use what appears
+in its arguments. Even if @{term choices} cheats, it agrees with @{term
+choice}, which cannot.
 
-The next two show that the @{text choices} are legal. That is, every cat chooses
-the number of some hat, and no number is repeated:
+The next two show that the @{text choices} are legal. That is, every cat
+chooses the number of some hat, and no number is repeated:
 
 \begin{center}
-@{thm[mode=Rule] choices_legal[no_vars]}
+@{thm[mode=Rule] legal[no_vars]}
+{\sc legal}
 \end{center}
 
 \begin{center}
-@{thm[mode=Rule] choices_distinct[no_vars]}
+@{thm[mode=Rule] distinct[no_vars]}
+{\sc distinct}
 \end{center}
 
 Finally, every cat except the rearmost chooses the number of its assigned hat:
 
 \begin{center}
-@{thm[mode=Rule] choices_correct[no_vars]}
+@{thm[mode=Rule] correct[no_vars]}
+{\sc correct}
 \end{center}
 
 \<close>
