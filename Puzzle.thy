@@ -1318,6 +1318,39 @@ Finally, every cat except the rearmost chooses the number of its assigned hat:
 
 \<close>
 
+section \<open>Conclusion\<close>
+
+text \<open>
+
+Solving algorithmic problems requires precise thinking. It requires us to keep
+account of the properties established by and required by any algorithm we are
+constructing. It helps enormously to have a language in which we can write down
+what we know and what we have assumed, and which allows us to check that our
+reasoning is logically sound. A mechanised theorem prover like Isabelle/HOL
+gives us such a language.
+
+But precise thinking also requires \emph{practice}. My hope in writing this is
+to convince you that exercising using a formal theorem prover is a useful
+personal discipline for developing some aspects of algorithmic problem-solving
+ability.
+
+To learn more about theorem proving using Isabelle/HOL, read Tobias Nipkow and
+Gerwin Klein, \emph{Concrete Semantics}, Springer 2014. There is a free PDF
+available here:
+
+\url{http://concrete-semantics.org/}
+
+This article was written as a literate Isabelle/HOL theory, so all definitions
+have been type-checked, and all proofs checked for validity. The source, with
+some other bits and pieces, is available here:
+
+\url{https://github.com/mbrcknl/puzzle-parity-permutations}
+
+In particular, there is a more direct bottom-up version of the proof, which is
+slightly shorter, because we did not need to invert the reasoning.
+
+\<close>
+
 (*<*)
 end
 (*>*)
