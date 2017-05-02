@@ -1,6 +1,6 @@
 session Puzzle = HOL +
   options
-    [ document_variants=puzzle
+    [ document_variants=Puzzle
     , document_output=document
     , document=pdf
     ]
