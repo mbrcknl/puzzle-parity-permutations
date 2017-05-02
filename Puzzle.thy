@@ -1192,17 +1192,44 @@ lemma parity_swap_adj:
       by auto
   qed
 
+text \<open>
+
+To prove that swapping any two elements inverts the parity, we use @{text
+parity_swap_adj} as the base case, and reason by induction on the list between
+the two elements we are swapping.
+
+\<close>
+
 lemma parity_swap:
   assumes "b \<noteq> d \<and> b \<notin> set cs \<and> d \<notin> set cs"
   shows "parity (as @ b # cs @ d # es) \<longleftrightarrow> \<not> parity (as @ d # cs @ b # es)"
   using assms
   proof (induct cs arbitrary: as)
-    case Nil thus ?case using parity_swap_adj[of b d as es] by simp
+    case Nil
+    -- "We get the following from the assumptions."
+    hence "b \<noteq> d" by simp
+    -- "From that and @{text parity_swap_adj}, we get the following."
+    hence "parity (as @ b # d # es) \<longleftrightarrow> \<not> parity (as @ d # b # es)"
+      using parity_swap_adj[of b d as es] by simp
+    -- "The @{text Nil} case then follows by simplification"
+    thus "parity (as @ b # [] @ d # es) \<longleftrightarrow> \<not> parity (as @ d # [] @ b # es)"
+      by simp
   next
-    case (Cons c cs) show ?case
-      using parity_swap_adj[of b c as "cs @ d # es"]
-            parity_swap_adj[of d c as "cs @ b # es"]
-            Cons(1)[where as="as @ [c]"] Cons(2)
+    case (Cons c cs)
+    -- "We get the following by swapping @{term b} and @{term c}, which are adjacent."
+    have " parity (as @ b # c # cs @ d # es) \<longleftrightarrow> \<not> parity (as @ c # b # cs @ d # es)"
+      using Cons parity_swap_adj[of b c as "cs @ d # es"] by simp
+    moreover
+    -- "We get the following by swapping @{term d} and @{term c}, which are adjacent."
+    have "parity (as @ d # c # cs @ b # es) \<longleftrightarrow> \<not> parity (as @ c # d # cs @ b # es)"
+      using Cons parity_swap_adj[of d c as "cs @ b # es"] by simp
+    moreover
+    -- "We get the following from the induction hypothesis."
+    have "parity (as @ c # b # cs @ d # es) \<longleftrightarrow> \<not> parity (as @ c # d # cs @ b # es)"
+      using Cons(1)[where as="as @ [c]"] Cons(2) by auto
+    ultimately
+    -- "By combining the previous three swaps, we can prove the @{text Cons} case."
+    show "parity (as @ b # (c # cs) @ d # es) \<longleftrightarrow> \<not> parity (as @ d # (c # cs) @ b # es)"
       by simp
   qed
 
