@@ -1208,28 +1208,28 @@ lemma parity_swap:
     case Nil
     -- "We get the following from the assumptions."
     hence "b \<noteq> d" by simp
-    -- "From that and @{text parity_swap_adj}, we get the following."
+    -- "From that and @{text parity_swap_adj}, we get:"
     hence "parity (as @ b # d # es) \<longleftrightarrow> \<not> parity (as @ d # b # es)"
       using parity_swap_adj[of b d as es] by simp
-    -- "The @{text Nil} case then follows by simplification"
+    -- "The @{text Nil} case then follows by simplification:"
     thus "parity (as @ b # [] @ d # es) \<longleftrightarrow> \<not> parity (as @ d # [] @ b # es)"
       by simp
   next
-    case (Cons c cs)
-    -- "We get the following by swapping @{term b} and @{term c}, which are adjacent."
-    have " parity (as @ b # c # cs @ d # es) \<longleftrightarrow> \<not> parity (as @ c # b # cs @ d # es)"
-      using Cons parity_swap_adj[of b c as "cs @ d # es"] by simp
+    case (Cons c cs')
+    -- "By swapping @{term b} and @{term c}, which are adjacent, we get:"
+    have " parity (as @ b # c # cs' @ d # es) \<longleftrightarrow> \<not> parity (as @ c # b # cs' @ d # es)"
+      using Cons parity_swap_adj[of b c as "cs' @ d # es"] by simp
     moreover
-    -- "We get the following by swapping @{term d} and @{term c}, which are adjacent."
-    have "parity (as @ d # c # cs @ b # es) \<longleftrightarrow> \<not> parity (as @ c # d # cs @ b # es)"
-      using Cons parity_swap_adj[of d c as "cs @ b # es"] by simp
+    -- "From the induction hypothesis, we get:"
+    have "parity (as @ c # b # cs' @ d # es) \<longleftrightarrow> \<not> parity (as @ c # d # cs' @ b # es)"
+      using Cons(1)[where as="as @ [c]"] Cons(2) by simp
     moreover
-    -- "We get the following from the induction hypothesis."
-    have "parity (as @ c # b # cs @ d # es) \<longleftrightarrow> \<not> parity (as @ c # d # cs @ b # es)"
-      using Cons(1)[where as="as @ [c]"] Cons(2) by auto
+    -- "By swapping @{term c} and @{term d}, which are adjacent, we get:"
+    have "parity (as @ c # d # cs' @ b # es) \<longleftrightarrow> \<not> parity (as @ d # c # cs' @ b # es)"
+      using Cons parity_swap_adj[of c d as "cs' @ b # es"] by simp
     ultimately
     -- "By combining the previous three swaps, we can prove the @{text Cons} case."
-    show "parity (as @ b # (c # cs) @ d # es) \<longleftrightarrow> \<not> parity (as @ d # (c # cs) @ b # es)"
+    show "parity (as @ b # (c # cs') @ d # es) \<longleftrightarrow> \<not> parity (as @ d # (c # cs') @ b # es)"
       by simp
   qed
 
