@@ -508,7 +508,7 @@ In this case, we want to make the consequences of @{term cat_0} available in
 @{term cat_k}, so we need to prove the assumptions of @{term cat_0} in the
 context of @{term cat_k}. Thankfully, in @{term cat_k}, we can use the
 assumptions of @{term cat_k}, and @{text exists_0} follows easily from @{text
-k_min} and @{text k_max}.
+k_max}.
 
 To interpret one locale within another, we use the \isacommand{sublocale}
 command:
@@ -516,7 +516,7 @@ command:
 \<close>
 
 sublocale cat_k < cat_0
-  using k_min k_max by unfold_locales auto
+  using k_max by unfold_locales auto
 
 text \<open>
 
@@ -947,9 +947,7 @@ we'll use a sublocale proof:
 \<close>
 
 sublocale cat_k_parity < cat_k_view spare assigned "choices assigned" k
-  apply unfold_locales
-  unfolding choice_0 candidates_0
-  by simp
+  using choice_0 candidates_0 by unfold_locales simp
 
 lemma (in cat_k_parity) choice_k: "choices assigned ! k = assigned ! k"
   using classifier_swap[OF distinct_k] distinct_k parity_k
@@ -969,7 +967,7 @@ this implication is easy to prove in @{term hats_parity}:
 
 \<close>
 
-lemma (in hats_parity) cat_k_cat_k_parity:
+lemma (in hats_parity) cat_k_parity:
   assumes "cat_k spare assigned (choices assigned) k"
   shows "cat_k_parity spare assigned parity k"
   proof -
@@ -986,7 +984,7 @@ cat except the rearmost says its assigned hat number.
 
 lemma (in hats_parity) choices_correct:
   "k \<in> {1..<length assigned} \<Longrightarrow> choices assigned ! k = assigned ! k"
-  by (rule cat_k_induct[OF cat_k_parity.choice_k, OF cat_k_cat_k_parity])
+  by (rule cat_k_induct[OF cat_k_parity.choice_k, OF cat_k_parity])
 
 section \<open>Legalities\<close>
 
@@ -1276,6 +1274,14 @@ begin
 end
 (*<*)
 thm choices legal distinct correct
+
+lemma example_odd: "choices [2,0,5,4,3] = [1,0,5,4,3]"
+  unfolding choices_def choices'_def Let_def choice_def
+  by eval
+
+lemma example_even: "choices [2,4,5,0,3] = [2,4,5,0,3]"
+  unfolding choices_def choices'_def Let_def choice_def
+  by eval
 (*>*)
 
 text \<open>
