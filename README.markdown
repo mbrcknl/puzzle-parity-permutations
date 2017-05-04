@@ -43,3 +43,10 @@ The `lib` folder contains:
   which has a BSD-style license.
 
 [Isabelle/HOL]: https://isabelle.in.tum.de/
+
+### Requirements
+
+To build the proofs, install the [Isabelle2016-1][] distribution, and run
+`make` in the root folder of this repository.
+
+[Isabelle2016-1]: https://isabelle.in.tum.de/installation.html
