@@ -16,7 +16,7 @@ commentary, in `Puzzle.pdf`.
 
 ### License
 
-Copyright 2017 [Matthew Brecknell][]. Licensed under a [Create Commons
+Copyright 2017 [Matthew Brecknell][]. Licensed under a [Creative Commons
 Attribution 4.0 International License][CC].
 
 [Matthew Brecknell]: http://matthew.brecknell.net/
