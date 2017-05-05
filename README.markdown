@@ -14,6 +14,8 @@ How do they do this? `Puzzle.thy` has the answer, with a proof in
 [Isabelle/HOL][]. There is a PDF rendering of the entire proof, with detailed
 commentary, in `Puzzle.pdf`.
 
+[Isabelle/HOL]: https://isabelle.in.tum.de/
+
 ### License
 
 Copyright 2017 [Matthew Brecknell][]. Licensed under a [Creative Commons
@@ -42,7 +44,10 @@ The `lib` folder contains:
   `LaTeX_Rule_Sugar.thy`. This was taken from the Isabelle/HOL distribution,
   which has a BSD-style license.
 
-[Isabelle/HOL]: https://isabelle.in.tum.de/
+The `ylj17` folder contains a slightly abbreviated version of the top-down
+proof for a talk at [YOW! Lambda Jam 2017][YLJ17].
+
+[YLJ17]: http://lambdajam.yowconference.com.au/
 
 ### Requirements
 
