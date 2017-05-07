@@ -260,11 +260,17 @@ lemma (in hats_parity) choices_correct:
 
 text \<open>\clearpage\<close>
 
+-- "Do we have an even number of inversions?"
 primrec
   parity :: "nat list \<Rightarrow> bool"
 where
   "parity [] = True"
 | "parity (x # ys) = (parity ys = even (length [y \<leftarrow> ys. x > y]))"
+
+lemma parity_odd: "parity [1,2,0,5,4,3] = False"
+  by %invisible eval
+lemma parity_even: "parity [2,1,0,5,4,3] = True"
+  by %invisible eval
 
 lemma parity_swap_adj:
   "b \<noteq> c \<Longrightarrow> parity (as @ b # c # ds) \<longleftrightarrow> \<not> parity (as @ c # b # ds)"
@@ -297,22 +303,14 @@ global_interpretation classifier parity
 sublocale hats < hats_parity spare assigned parity
   by %invisible unfold_locales
 
-context
-  fixes spare assigned
-  assumes assign: "set (spare # assigned) = {0 .. length assigned}"
-begin
-  interpretation hats using assign by unfold_locales
-  lemmas choices_correct = choices_correct
+context hats begin
+  lemma example_odd: "choices [2,0,5,4,3] = [1,0,5,4,3]"
+    unfolding %invisible choices_def choices'_def Let_def choice_def
+    by %invisible eval
+  lemma example_even: "choices [1,0,5,4,3] = [1,0,5,4,3]"
+    unfolding %invisible choices_def choices'_def Let_def choice_def
+    by %invisible eval
 end
-
-thm %invisible choices_correct
-
-lemma example_odd: "choices [2,0,5,4,3] = [1,0,5,4,3]"
-  unfolding %invisible choices_def choices'_def Let_def choice_def
-  by %invisible eval
-lemma example_even: "choices [2,4,5,0,3] = [2,4,5,0,3]"
-  unfolding %invisible choices_def choices'_def Let_def choice_def
-  by %invisible eval
 
 (*<*)
 end
