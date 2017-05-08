@@ -39,7 +39,8 @@ definition
   candidates_excluding :: "nat list \<Rightarrow> nat list \<Rightarrow> nat set"
 where
   "candidates_excluding heard seen \<equiv>
-    let excluded = heard @ seen in {0 .. 1 + length excluded} - set excluded"
+    let excluded = heard @ seen in
+      {0 .. 1 + length excluded} - set excluded"
 
 definition (in cats)
   "candidates i \<equiv> candidates_excluding (heard i) (seen i)"
@@ -71,7 +72,8 @@ text \<open>\clearpage\<close>
 locale cat_0 = cats +
   assumes exists_0: "0 < length assigned"
 
-abbreviation (in cat_0) (input) "view_0 \<equiv> spare # assigned ! 0 # seen 0"
+abbreviation (in cat_0) (input)
+  "view_0 \<equiv> spare # assigned ! 0 # seen 0"
 
 lemma (in cat_0) set_0: "set view_0 = {0..length assigned}"
   using %invisible assign unfolding %invisible seen_def Cons_nth_drop_Suc[OF exists_0]
@@ -80,14 +82,16 @@ lemma (in cat_0) distinct_0: "distinct view_0"
   using %invisible distinct_hats unfolding %invisible seen_def Cons_nth_drop_Suc[OF exists_0]
   by %invisible auto
 
-lemma (in cat_0) candidates_0: "candidates 0 = {spare, assigned ! 0}"
+lemma (in cat_0) candidates_0:
+  "candidates 0 = {spare, assigned ! 0}"
   using %invisible candidates_i[OF exists_0] distinct_0 set_0 unfolding %invisible heard_def
   by %invisible auto
 
 definition (in cat_0)
   "rejected \<equiv> if spoken ! 0 = spare then assigned ! 0 else spare"
 
-abbreviation (in cat_0) (input) "view_r \<equiv> rejected # spoken ! 0 # seen 0"
+abbreviation (in cat_0) (input)
+  "view_r \<equiv> rejected # spoken ! 0 # seen 0"
 
 locale cat_0_spoken = cat_0 +
   assumes spoken_candidate_0: "spoken ! 0 \<in> candidates 0"
@@ -122,7 +126,8 @@ lemma (in cat_k) heard_k:
 sublocale cat_k < cat_0
   using k_max by unfold_locales auto
 
-abbreviation (in cat_k) (input) "view_k \<equiv> rejected # heard k @ assigned ! k # seen k"
+abbreviation (in cat_k) (input)
+  "view_k \<equiv> rejected # heard k @ assigned ! k # seen k"
 
 lemmas %invisible (in cat_k) drop_maps =
   drop_map_nth[OF less_imp_le_nat, OF k_max]
@@ -144,7 +149,8 @@ lemma (in cat_k_view) set_k: "set view_k = {0..length assigned}"
 lemma (in cat_k_view) distinct_k: "distinct view_k"
   using %invisible view_eq distinct_r by %invisible simp
 
-lemma (in cat_k_view) candidates_k: "candidates k = {rejected, assigned ! k}"
+lemma (in cat_k_view) candidates_k:
+  "candidates k = {rejected, assigned ! k}"
   using %invisible candidates_i[OF k_max] distinct_k set_k by %invisible simp
 
 text \<open>\clearpage\<close>
