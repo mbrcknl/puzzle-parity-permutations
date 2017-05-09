@@ -58,3 +58,13 @@ To build the proofs, install the [Isabelle2016-1][] distribution, and run
 `make` in the root folder of this repository.
 
 [Isabelle2016-1]: https://isabelle.in.tum.de/installation.html
+
+### Learn more
+
+To learn more about [Isabelle/HOL][], read Tobias Nipkow and Gerwin Klein,
+[Concrete Semantics][], Springer 2014. If you would prefer to learn [Coq][],
+try Benjamin Pierce *et al.*, [Software Foundations][].
+
+[Concrete Semantics]: http://concrete-semantics.org/
+[Coq]: https://coq.inria.fr/
+[Software Foundations]: https://www.cis.upenn.edu/~bcpierce/sf/current/index.html
