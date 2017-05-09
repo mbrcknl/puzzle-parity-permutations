@@ -44,8 +44,11 @@ The `lib` folder contains:
   `LaTeX_Rule_Sugar.thy`. This was taken from the Isabelle/HOL distribution,
   which has a BSD-style license.
 
-The `ylj17` folder contains a slightly abbreviated version of the top-down
-proof for a talk at [YOW! Lambda Jam 2017][YLJ17].
+The `ylj17` folder contains:
+
+- A slightly abbreviated version of the top-down proof for a talk at [YOW!
+  Lambda Jam 2017][YLJ17].
+- Slides for that talk.
 
 [YLJ17]: http://lambdajam.yowconference.com.au/
 
