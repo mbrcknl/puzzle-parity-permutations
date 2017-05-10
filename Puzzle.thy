@@ -57,7 +57,7 @@ the puzzle to have a solution, but which we don't yet know how to prove. But
 we'll typically need to carry these assumptions through many lemmas. So, to
 avoid repeating assumptions, we'll use the \isacommand{locale} mechanism of
 Isabelle/HOL to create named bundles of assumptions. Later, we'll discharge our
-assumptions using locale \emph{interpretataion}.
+assumptions using locale \emph{interpretation}.
 
 Our first locale, @{text hats}, describes the basic setup of the
 puzzle:\footnote{When reading Isabelle/HOL, you may ignore double quotes. They
